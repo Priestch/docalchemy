@@ -4,7 +4,7 @@ import "@document-kits/viewer/viewer.css";
 import "./assets/app.css";
 
 
-const name = "10955";
+const name = "600016";
 let src = getDocumentUrl(name);
 const appOptions = {
   parent: document.getElementById("app"),
@@ -12,6 +12,9 @@ const appOptions = {
   resourcePath: "document-viewer",
   disableCORSCheck: true,
   disableAutoSetTitle: true,
+  appOptions: {
+    textLayerMode: 0,
+  }
 };
 
 // annotations
@@ -112,49 +115,71 @@ class ImagePage {
     this.scale = this.viewport.width / pdfViewport.width;
   }
 
-  getRect(boundingBox) {
-    return [boundingBox.ulx, boundingBox.uly, boundingBox.lrx, boundingBox.lry].map((i) => i / this.scale);
+  getAnnotationDims(index) {
+    const box = this.data.annotations[index].bounding_box;
+    return {
+      x: box.ulx / this.viewport.width,
+      y: box.uly / this.viewport.height,
+      width: (box.lrx - box.ulx) / this.viewport.width,
+      height: (box.lry - box.uly) / this.viewport.height,
+    };
   }
+}
 
-  getAnnotationRect(index) {
-    const annotation = this.data.annotations[index];
-    return this.getRect(annotation.bounding_box);
-  }
+function registerEventHandler(viewerApp, name, handler) {
+  viewerApp.initializedPromise.then(function () {
+    viewerApp.eventBus.on(name, handler);
+  })
 }
 
 function renderPredictions(pageNumber) {
   getPagePredictions(name, pageNumber).then((res) => {
+    res.data.annotations.sort((a, b) => {
+      return a.bounding_box.uly - b.bounding_box.uly;
+    })
     const pageView = viewerApp.pdfViewer.getPageView(pageNumber - 1);
     const page = new ImagePage(res.data, pageView.viewport);
 
     const annotations = page.data.annotations;
-    console.log(new Set(annotations.map(i => i.category_name)));
+    console.log(new Set(annotations.map(i => i.category_name)), annotations);
+    const annotationEditorLayer = pageView.annotationEditorLayer.annotationEditorLayer;
     for (let i = 0; i < annotations.length; i++) {
       const annotation = annotations[i];
-      const excludeCategories = ['word', 'row', 'column', 'cell']
+      // const excludeCategories = ['word', 'row', 'column', 'cell']
+      const excludeCategories = ['word', 'row', 'column', 'cell', 'table']
       if (excludeCategories.includes(annotation.category_name)) {
         continue;
       }
-      const rect = page.getAnnotationRect(i);
+      const dims = page.getAnnotationDims(i);
       const div = document.createElement('div');
-      div.style.position = "absolute";
-      div.style.border = "1px solid red";
-      div.style.left = rect[0] + "px";
-      div.style.top = rect[1] + "px";
-      div.style.width = Math.ceil((rect[2] - rect[0])) + "px";
-      div.style.height = Math.ceil((rect[3] - rect[1])) + "px";
-      pageView.div.appendChild(div);
+      div.dataset.category = annotation.category_name;
+      div.classList.add('annotation');
+      // div.style.left = rect[0] + "px";
+      div.style.left = `${dims.x * 100}%`;
+      div.style.top = `${dims.y * 100}%`;
+      div.style.width = `${dims.width * 100}%`;
+      div.style.height = `${dims.height * 100}%`;
+      if (annotation.category_name === 'table') {
+        const tableEl = document.createElement('table');
+        const tableText = annotation.sub_categories.html.value.join("");
+        div.appendChild(tableEl)
+        tableEl.outerHTML = tableText;
+      } else {
+        const categoryEl = document.createElement('span');
+        categoryEl.classList.add('annotation__label')
+        categoryEl.textContent = annotation.category_name;
+        div.appendChild(categoryEl);
+      }
+
+      annotationEditorLayer.div.hidden = false;
+      annotationEditorLayer.div.appendChild(div);
     }
   })
 }
 
 const viewerApp = createViewerApp(appOptions);
 viewerApp.initializedPromise.then(function () {
-  viewerApp.eventBus.on('documentinit', function () {
-    console.log('isReady', viewerApp);
-    viewerApp.eventBus.on('pagerendered', async function (evt) {
-      console.log("pagerendered", evt);
-      renderPredictions(evt.pageNumber);
-    });
+  registerEventHandler(viewerApp, 'annotationeditorlayerrendered', function (evt) {
+    renderPredictions(evt.pageNumber);
   })
 })

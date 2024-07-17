@@ -45,5 +45,6 @@ def get_page_predictions(doc_name, page):
     with open(data_dir / f"page{page}.json") as f:
         data = json.load(f)
         result = {k: data[k] for k in data.keys() if k != '_image'}
+        result['annotations'] = [i for i in result['annotations'] if i['category_name'] != 'word']
 
     return result

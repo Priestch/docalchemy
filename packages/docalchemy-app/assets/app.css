@@ -3,3 +3,45 @@ body,
 #app {
   height: 100%;
 }
+
+.annotationEditorLayer {
+  pointer-events: initial !important;
+}
+
+.annotation {
+  z-index: 2;
+  position: absolute;
+  outline: 2px solid red;
+  font-size: 16px;
+
+  &:hover {
+    .annotation__label {
+      display: initial;
+      opacity: 0.8;
+    }
+  }
+
+  .annotation__label {
+    display: none;
+  }
+}
+
+.annotation[data-category="table"] table {
+  border: 1px solid red;
+  border-collapse: collapse;
+}
+
+.annotation[data-category="table"] table td {
+  border: 1px solid red;
+  color: transparent;
+}
+
+.annotation:hover .annotation__label {
+  display: initial;
+  position: absolute;
+  width: 5em;
+  top: -1.6em;
+  font-weight: bold;
+  padding: 3px 4px;
+  background-color: #00640066;
+}
