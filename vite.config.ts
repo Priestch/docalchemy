@@ -1,7 +1,7 @@
 import { defineConfig } from "vite"
 import path from "path"
 import litestar from "litestar-vite-plugin"
-import react from "@vitejs/plugin-react"
+import vue from '@vitejs/plugin-vue'
 
 const ASSET_URL = process.env.ASSET_URL || "/static/"
 const VITE_PORT = process.env.VITE_PORT || "5173"
@@ -20,7 +20,7 @@ export default defineConfig({
     },
   },
   plugins: [
-    // react(),
+    vue(),
     litestar({
       input: ["resources/index.html"],
       assetUrl: `${ASSET_URL}`,

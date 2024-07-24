@@ -5,7 +5,7 @@
 groups = ["default", "dev", "docs", "linting", "test"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.2"
-content_hash = "sha256:740631a0cc48057f4d6f4ee7739df0071a698e6a4381e21b6122406e1e3cd0fa"
+content_hash = "sha256:e46f2a947f5d1f1a4890650a6846b91dcdce3951bf9f35d16eaa7792db930560"
 
 [[package]]
 name = "accessible-pygments"
@@ -1314,7 +1314,7 @@ files = [
 [[package]]
 name = "litestar-sphinx-theme"
 version = "0.2.0"
-requires_python = ">=3.8,<4.0"
+requires_python = "<4.0,>=3.8"
 git = "https://github.com/litestar-org/litestar-sphinx-theme.git"
 revision = "76b1d0e4c8afff1ad135b1917fe09cf6c1cc6c9b"
 summary = "A Sphinx theme for the Litestar organization"
@@ -1683,6 +1683,22 @@ groups = ["default", "dev", "linting"]
 files = [
     {file = "nodeenv-1.9.1-py2.py3-none-any.whl", hash = "sha256:ba11c9782d29c27c70ffbdda2d7415098754709be8a7056d79a737cd901155c9"},
     {file = "nodeenv-1.9.1.tar.gz", hash = "sha256:6ec12890a2dab7946721edbfbcd91f3319c6ccc9aec47be7c7e6b7011ee6645f"},
+]
+
+[[package]]
+name = "object-store-python"
+version = "0.1.10"
+requires_python = ">=3.8"
+summary = "A generic object store interface for uniformly interacting with AWS S3, Google Cloud Storage, Azure Storage and local files."
+groups = ["default"]
+files = [
+    {file = "object_store_python-0.1.10-cp38-abi3-macosx_10_7_x86_64.whl", hash = "sha256:e84f719d06773fdef17e82d7d8ad48aee2a82a04b97b4c50f7a2f5c6da4223a3"},
+    {file = "object_store_python-0.1.10-cp38-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:33f1f2fd11bcf2c1d6936dd2a09f538530c99b8735f9be5d2f4bf56b83f2f386"},
+    {file = "object_store_python-0.1.10-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:bf37ba9f9c79a5a2385f72109fb89c1155a6ffde1338fb6e8fb8d029de5b0b95"},
+    {file = "object_store_python-0.1.10-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3ca4d1b85e99af1fb476f6a7d4dae0d11a86a5df36f8d00d1b4a10362ad444cd"},
+    {file = "object_store_python-0.1.10-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7cbd3ec5172eb1a234d9ec9901d8298bbd84db486d2620a73249eb1d3f8586e3"},
+    {file = "object_store_python-0.1.10-cp38-abi3-win_amd64.whl", hash = "sha256:1758cb6348f5a1cbcaa3400c0f91f2affee35f567d4bae9c590e711f74d9b18f"},
+    {file = "object_store_python-0.1.10.tar.gz", hash = "sha256:451b22f89d15c5558c6b7ddbf9e773f47295931342a801ed1ff9f11d74857dc2"},
 ]
 
 [[package]]
