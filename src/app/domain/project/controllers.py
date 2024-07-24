@@ -38,15 +38,15 @@ class ProjectController(Controller):
     async def index(
             self,
             request: Request,
-            current_user: str,
             project_service: ProjectService
     ) -> OffsetPagination[Project]:
         """Serve site root."""
-        request.logger.info("-"*80, current_user)
-        projects = await project_service.list()
-        data = project_service.to_schema(projects, schema_type=Project)
-        data.items.append(data.items[0])
-        return data
+        current_user = request.get_session_id()
+
+        request.logger.debug(f"get project lists for {current_user}")
+
+        projects = await project_service.list(owner=current_user)
+        return project_service.to_schema(projects, schema_type=Project)
 
     @post(
         operation_id="CreateProject",
@@ -56,11 +56,13 @@ class ProjectController(Controller):
     async def create(
             self,
             request: Request,
-            current_user: str,
             data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
             project_service: ProjectService
     ) -> Project:
-        request.logger.info("create project", current_user)
+        current_user = request.get_session_id()
+
+        request.logger.debug(f"create project for {current_user}: {data.filename}")
+
         content = await data.read()
         md5 = hashlib.md5(content).hexdigest()
         _, ext = os.path.splitext(data.filename)

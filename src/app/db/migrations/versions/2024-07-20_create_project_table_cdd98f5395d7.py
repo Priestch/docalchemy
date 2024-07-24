@@ -66,7 +66,7 @@ def schema_upgrades() -> None:
                     sa.PrimaryKeyConstraint("id", name=op.f("pk_project")),
                     )
 
-    op.create_index("ix_project_status", table_name, ["status"], unique=False)
+    op.create_index("ix_project_owner_status", table_name, ["owner", "status"], unique=False)
 
 
 def schema_downgrades() -> None:

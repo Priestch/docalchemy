@@ -45,13 +45,13 @@ def create_app() -> Litestar:
     # from app.server import openapi, plugins, routers
     from app.server import plugins, routers
 
-    dependencies = {constants.USER_DEPENDENCY_KEY: Provide(provide_user)}
+    dependencies = {}
     dependencies.update(create_collection_dependencies())
     settings = get_settings()
 
     return Litestar(
         cors_config=config.cors,
-        dependencies=dependencies,
+        # dependencies=dependencies,
         debug=settings.app.DEBUG,
         # openapi_config=openapi.config,
         route_handlers=routers.route_handlers,
