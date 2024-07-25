@@ -1,6 +1,6 @@
-from app.lib.schema import CamelizedBaseStruct
+from uuid import UUID
 
-from uuid import UUID  # noqa: TCH003
+from app.lib.schema import CamelizedBaseStruct
 
 
 class Project(CamelizedBaseStruct):

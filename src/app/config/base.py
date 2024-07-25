@@ -12,7 +12,7 @@ from advanced_alchemy.utils.text import slugify
 from litestar.serialization import decode_json, encode_json
 from litestar.utils.module_loader import module_to_os_path
 from redis.asyncio import Redis
-from sqlalchemy import event
+from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -62,6 +62,8 @@ class DatabaseSettings:
     FIXTURE_PATH: str = f"{BASE_DIR}/db/fixtures"
     """The path to JSON fixture files to load into tables."""
     _engine_instance: AsyncEngine | None = None
+    """SQLAlchemy engine instance generated from settings."""
+    _sync_engine_instance: Engine | None = None
     """SQLAlchemy engine instance generated from settings."""
 
     @property
@@ -170,6 +172,74 @@ class DatabaseSettings:
             )
         self._engine_instance = engine
         return self._engine_instance
+
+    def get_sync_engine(self) -> Engine:
+        if self._sync_engine_instance is not None:
+            return self._sync_engine_instance
+
+        if self.URL.startswith("postgresql+asyncpg"):
+            url = self.URL.replace("postgresql+asyncpg", "postgresql+psycopg2")
+            engine = create_engine(
+                url=url,
+                future=True,
+                json_serializer=encode_json,
+                json_deserializer=decode_json,
+                echo=self.ECHO,
+                echo_pool=self.ECHO_POOL,
+                max_overflow=self.POOL_MAX_OVERFLOW,
+                pool_size=self.POOL_SIZE,
+                pool_timeout=self.POOL_TIMEOUT,
+                pool_recycle=self.POOL_RECYCLE,
+                pool_pre_ping=self.POOL_PRE_PING,
+                pool_use_lifo=True,  # use lifo to reduce the number of idle connections
+                poolclass=NullPool if self.POOL_DISABLED else None,
+            )
+            """Database session factory.
+
+            See [`async_sessionmaker()`][sqlalchemy.ext.asyncio.async_sessionmaker].
+            """
+        elif self.URL.startswith("sqlite+aiosqlite"):
+            url = self.URL.replace("sqlite+aiosqlite", "sqlite")
+            engine = create_engine(
+                url=url,
+                future=True,
+                json_serializer=encode_json,
+                json_deserializer=decode_json,
+                echo=self.ECHO,
+                echo_pool=self.ECHO_POOL,
+                pool_recycle=self.POOL_RECYCLE,
+                pool_pre_ping=self.POOL_PRE_PING,
+            )
+            """Database session factory.
+
+            See [`async_sessionmaker()`][sqlalchemy.ext.asyncio.async_sessionmaker].
+            """
+
+            @event.listens_for(engine.engine, "connect")
+            def _sqla_on_connect(dbapi_connection: Any, _: Any) -> Any:  # pragma: no cover
+                """Override the default begin statement.  The disables the built in begin execution."""
+                dbapi_connection.isolation_level = None
+
+            @event.listens_for(engine.engine, "begin")
+            def _sqla_on_begin(dbapi_connection: Any) -> Any:  # pragma: no cover
+                """Emits a custom begin"""
+                dbapi_connection.exec_driver_sql("BEGIN")
+        else:
+            engine = create_engine(
+                url=self.URL,
+                future=True,
+                json_serializer=encode_json,
+                json_deserializer=decode_json,
+                echo=self.ECHO,
+                echo_pool=self.ECHO_POOL,
+                max_overflow=self.POOL_MAX_OVERFLOW,
+                pool_size=self.POOL_SIZE,
+                pool_timeout=self.POOL_TIMEOUT,
+                pool_recycle=self.POOL_RECYCLE,
+                pool_pre_ping=self.POOL_PRE_PING,
+            )
+        self._sync_engine_instance = engine
+        return self._sync_engine_instance
 
 
 @dataclass
@@ -423,6 +493,14 @@ class AppSettings:
 
 
 @dataclass
+class CelerySettings:
+    """Celery configurations."""
+
+    BROKER_URL: str = field(default_factory=lambda: os.getenv("CELERY_BROKER_URL"))
+    RESULT_BACKEND_URL: str = field(default_factory=lambda: os.getenv("CELERY_RESULT_BACKEND_URL", ""))
+
+
+@dataclass
 class Settings:
     app: AppSettings = field(default_factory=AppSettings)
     db: DatabaseSettings = field(default_factory=DatabaseSettings)
@@ -431,6 +509,7 @@ class Settings:
     log: LogSettings = field(default_factory=LogSettings)
     redis: RedisSettings = field(default_factory=RedisSettings)
     saq: SaqSettings = field(default_factory=SaqSettings)
+    celery: CelerySettings = field(default_factory=CelerySettings)
 
     @classmethod
     def from_env(cls, dotenv_filename: str = ".env") -> Settings:

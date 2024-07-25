@@ -13,7 +13,7 @@ class WebController(Controller):
 
     @get(
         # path=[constants.SITE_INDEX, f"{constants.SITE_INDEX}/{{path:str}}"],
-        path=["/", f"/{{path:str}}"],
+        path=["/", "/{path:str}"],
         operation_id="WebIndex",
         name="frontend:index",
         status_code=HTTP_200_OK,

@@ -14,15 +14,8 @@ def user_management_app(_: dict[str, Any]) -> None:
 async def load_database_fixtures() -> None:
     """Import/Synchronize Database Fixtures."""
 
-    from pathlib import Path
 
-    from advanced_alchemy.utils.fixtures import open_fixture_async
-    from sqlalchemy import select
-    from sqlalchemy.orm import load_only
-    from structlog import get_logger
 
-    from app.config import get_settings
-    from app.config.app import alchemy
     # from app.db.models import Role
     # from app.domain.accounts.services import RoleService
 
@@ -126,8 +119,6 @@ def promote_to_superuser(email: str) -> None:
     Args:
         email (str): The email address of the user to promote.
     """
-    import anyio
-    from rich import get_console
 
     # from app.config.app import alchemy
     # from app.domain.accounts.schemas import UserUpdate

@@ -53,6 +53,7 @@ class ApplicationConfigurator(InitPluginProtocol, CLIPluginProtocol):
         from litestar.security.jwt import Token
 
         from app.config import constants, get_settings
+
         # from app.db.models import User as UserModel
         from app.lib.exceptions import ApplicationError, exception_to_http_response
 

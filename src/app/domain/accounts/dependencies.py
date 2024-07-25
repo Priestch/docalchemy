@@ -27,7 +27,7 @@ async def provide_user(request: Request[Any, Any, Any]) -> str:
     Returns:
         User
     """
-    print('*'*80)
+    print("*"*80)
     user = request.get_session_id()
     print("session id", user)
     # request.user = user

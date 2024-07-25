@@ -128,7 +128,7 @@ lint: 												## Runs pre-commit hooks; includes ruff linting, codespell, bl
 .PHONY: format
 format: 												## Runs code formatting utilities
 	@echo "=> Running pre-commit process"
-	@$(ENV_PREFIX)ruff . --fix
+	@$(ENV_PREFIX)ruff check . --fix
 	@echo "=> Pre-commit complete"
 
 .PHONY: coverage

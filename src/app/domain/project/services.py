@@ -1,7 +1,8 @@
-from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
+from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService, SQLAlchemySyncRepositoryService
 
 from app.db.models import Project
-from .repositories import ProjectRepository
+
+from .repositories import ProjectRepository, ProjectSyncRepository
 
 
 class ProjectService(SQLAlchemyAsyncRepositoryService[Project]):
@@ -17,3 +18,9 @@ class ProjectService(SQLAlchemyAsyncRepositoryService[Project]):
             "status": 0,
         }
         return await super().create(data, auto_commit=True)
+
+
+class ProjectSyncService(SQLAlchemySyncRepositoryService[Project]):
+    """Project Service."""
+
+    repository_type = ProjectSyncRepository

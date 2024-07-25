@@ -3,9 +3,13 @@ from typing import cast
 
 from advanced_alchemy.extensions.litestar import (
     AlembicAsyncConfig,
+    AlembicSyncConfig,
     AsyncSessionConfig,
     SQLAlchemyAsyncConfig,
+    SQLAlchemySyncConfig,
+    SyncSessionConfig,
     async_autocommit_before_send_handler,
+    sync_autocommit_before_send_handler,
 )
 from litestar.config.compression import CompressionConfig
 from litestar.config.cors import CORSConfig
@@ -13,7 +17,6 @@ from litestar.config.csrf import CSRFConfig
 from litestar.logging.config import LoggingConfig, StructLoggingConfig
 from litestar.middleware.logging import LoggingMiddlewareConfig
 from litestar.plugins.structlog import StructlogConfig
-from litestar_saq import CronJob, QueueConfig, SAQConfig
 from litestar_vite import ViteConfig
 
 from .base import get_settings
@@ -37,6 +40,16 @@ alchemy = SQLAlchemyAsyncConfig(
         script_location=settings.db.MIGRATION_PATH,
     ),
 )
+alchemy_sync = SQLAlchemySyncConfig(
+    engine_instance=settings.db.get_sync_engine(),
+    before_send_handler=sync_autocommit_before_send_handler,
+    session_config=SyncSessionConfig(expire_on_commit=False),
+    alembic_config=AlembicSyncConfig(
+        version_table_name=settings.db.MIGRATION_DDL_VERSION_TABLE,
+        script_config=settings.db.MIGRATION_CONFIG,
+        script_location=settings.db.MIGRATION_PATH,
+    ),
+)
 vite = ViteConfig(
     bundle_dir=settings.vite.BUNDLE_DIR,
     resource_dir=settings.vite.RESOURCE_DIR,
@@ -47,38 +60,6 @@ vite = ViteConfig(
     is_react=settings.vite.ENABLE_REACT_HELPERS,
     port=settings.vite.PORT,
     host=settings.vite.HOST,
-)
-saq = SAQConfig(
-    redis=settings.redis.client,
-    web_enabled=settings.saq.WEB_ENABLED,
-    worker_processes=settings.saq.PROCESSES,
-    use_server_lifespan=settings.saq.USE_SERVER_LIFESPAN,
-    queue_configs=[
-        # QueueConfig(
-        #     name="system-tasks",
-        #     tasks=["app.domain.system.tasks.system_task", "app.domain.system.tasks.system_upkeep"],
-        #     scheduled_tasks=[
-        #         CronJob(
-        #             function="app.domain.system.tasks.system_upkeep",
-        #             unique=True,
-        #             cron="0 * * * *",
-        #             timeout=500,
-        #         ),
-        #     ],
-        # ),
-        # QueueConfig(
-        #     name="background-tasks",
-        #     tasks=["app.domain.system.tasks.background_worker_task"],
-        #     scheduled_tasks=[
-        #         CronJob(
-        #             function="app.domain.system.tasks.background_worker_task",
-        #             unique=True,
-        #             cron="* * * * *",
-        #             timeout=300,
-        #         ),
-        #     ],
-        # ),
-    ],
 )
 
 log = StructlogConfig(
@@ -105,11 +86,6 @@ log = StructlogConfig(
                 "granian.error": {
                     "propagate": False,
                     "level": settings.log.GRANIAN_ERROR_LEVEL,
-                    "handlers": ["queue_listener"],
-                },
-                "saq": {
-                    "propagate": False,
-                    "level": settings.log.SAQ_LEVEL,
                     "handlers": ["queue_listener"],
                 },
                 "sqlalchemy.engine": {
