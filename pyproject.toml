@@ -29,7 +29,9 @@ dependencies = [
     "torch==2.3.0",
     "celery[redis]>=5.4.0",
     "psycopg2>=2.9.9",
-    "psycopg2-binary>=2.9.9",
+    "detectron2 @ git+https://github.com/facebookresearch/detectron2.git",
+    "fasttext @ git+https://github.com/cfculhane/fastText",
+    "deepdoctection[pt]>=0.33",
 ]
 description = "Opinionated template for a Litestar application."
 keywords = ["litestar", "sqlalchemy", "alembic", "fullstack", "api", "asgi", "litestar", "vite", "spa"]
