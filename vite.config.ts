@@ -1,7 +1,8 @@
-import { defineConfig } from "vite"
-import path from "path"
-import litestar from "litestar-vite-plugin"
-import vue from '@vitejs/plugin-vue'
+import { defineConfig } from "vite";
+import path from "path";
+import { viteStaticCopy } from "vite-plugin-static-copy";
+import litestar from "litestar-vite-plugin";
+import vue from '@vitejs/plugin-vue';
 
 const ASSET_URL = process.env.ASSET_URL || "/static/"
 const VITE_PORT = process.env.VITE_PORT || "5173"
@@ -28,11 +29,22 @@ export default defineConfig({
       resourceDirectory: "resources",
       hotFile: "src/app/domain/web/public/hot",
     }),
+    viteStaticCopy({
+      targets: [
+        {
+          src: path.resolve(__dirname, "node_modules/@document-kits/viewer/dist/generic/*"),
+          dest: "document-viewer",
+        },
+      ],
+    }),
   ],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "resources"),
-    },
+    alias: [
+      {
+        find: /^canvas$/,
+        replacement: path.resolve(__dirname, "resources/canvas.js"),
+      },
+    ],
   },
   build: {
     emptyOutDir: true,

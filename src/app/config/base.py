@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import binascii
 import json
+import logging
 import os
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -23,6 +24,7 @@ DEFAULT_MODULE_NAME = "app"
 BASE_DIR: Final[Path] = module_to_os_path(DEFAULT_MODULE_NAME)
 
 TRUE_VALUES = {"True", "true", "1", "yes", "Y", "T"}
+LOG_NAMES = logging.getLevelNamesMapping()
 
 
 @dataclass
@@ -342,7 +344,7 @@ class LogSettings:
     """Log event name for logs from Litestar handlers."""
     INCLUDE_COMPRESSED_BODY: bool = False
     """Include 'body' of compressed responses in log output."""
-    LEVEL: int = field(default_factory=lambda: int(os.getenv("LOG_LEVEL", "10")))
+    LEVEL: int = field(default_factory=lambda: LOG_NAMES.get(os.getenv("LOG_LEVEL", "INFO"), 10))
     """Stdlib log levels.
 
     Only emit logs at this level, or higher.

@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING
+from .services import FurnaceService
 
 if TYPE_CHECKING:
-    from litestar.stores.file import FileStore
+    pass
 
 
 class Furnace:
-    def __init__(self, storage: FileStore):
-        self.storage = storage
+    def __init__(self, service: FurnaceService):
+        self.service = service
 
     def start(self):
         """Start the doc furnace

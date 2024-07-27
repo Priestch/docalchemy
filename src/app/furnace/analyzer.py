@@ -1,27 +1,31 @@
+import json
 from pathlib import Path
+from zipfile import ZipFile
 
 import deepdoctection as dd
-from server.storage import storage
-
-d_analyzer = dd.get_dd_analyzer()
 
 
 class Analyzer:
-    def __init__(self, file_storage: "Storage"):
-        self.storage = file_storage
+    d_analyzer = None
 
-    def analyze(self, file: Path):
-        df = d_analyzer.analyze(path=file)
+    def __init__(self):
+        if Analyzer.d_analyzer is None:
+            Analyzer.d_analyzer = dd.get_dd_analyzer()
+
+    def analyze(self, file: Path) -> Path:
+        df = self.d_analyzer.analyze(path=file, output="dict")
         df.reset_state()
 
-        output_dir = self.storage.ensure_analyse_dir(file)
-        for page in iter(df):
-            page_path = output_dir / f"page{page.page_number + 1}.json"
-            page.save(path=page_path, image_to_json=False, highest_hierarchy_only=True)
-            # page.save(path=page_path, image_to_json=False)
+        zipfile_path = file.with_suffix('.zip')
+        with ZipFile(zipfile_path, 'w') as myzip:
+            for page in iter(df):
+                page_num = page.get("page_number")
+                myzip.writestr(f"page{page_num}.json", json.dumps(page))
+
+        return zipfile_path
 
 
 if __name__ == "__main__":
-    analyzer = Analyzer(file_storage=storage)
-    file_path = fild_path = Path("/home/gaopeng/Enter/docalchemy-space/storage/files/demo/demo.pdf")
+    analyzer = Analyzer()
+    file_path = fild_path = Path("/home/gaopeng/Enter/docalchemy/storage/2ac25d73f4db8c78b6b1613337bc5182.pdf")
     analyzer.analyze(file_path)
