@@ -1,0 +1,13 @@
+[tool.uv.pip]
+index-url = "https://pypi.doubanio.com/simple"
+
+[project]
+name = "docalchemy1"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "celery[redis]>=5.4.0",
+    "litestar[redis,structlog]>=2.13.0",
+]
