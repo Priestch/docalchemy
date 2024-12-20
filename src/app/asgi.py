@@ -4,7 +4,10 @@
 # SPDX-License-Identifier: MIT
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
+
+from app.server import plugins
 
 if TYPE_CHECKING:
     from litestar import Litestar
@@ -14,10 +17,13 @@ def create_app() -> Litestar:
     """Create ASGI application."""
 
     from litestar import Litestar
+    from litestar.contrib.jinja import JinjaTemplateEngine
+    from litestar.template.config import TemplateConfig
     from litestar.di import Provide
 
+    from app.config.app import settings
+
     # from app.config import app as config
-    # from app.config import constants
     # from app.config.base import get_settings
     # from app.domain.accounts import signals as account_signals
     # from app.domain.accounts.dependencies import provide_user
@@ -34,14 +40,18 @@ def create_app() -> Litestar:
     return Litestar(
         # cors_config=config.cors,
         # dependencies=dependencies,
-        # debug=settings.app.DEBUG,
+        debug=settings.app.DEBUG,
         # openapi_config=openapi.config,
         route_handlers=routers.route_handlers,
+        template_config=TemplateConfig(
+            directory=settings.vite.TEMPLATE_DIR,
+            engine=JinjaTemplateEngine,
+        ),
         plugins=[
             # plugins.app_config,
             # plugins.structlog,
             # plugins.alchemy,
-            # plugins.vite,
+            plugins.vite,
             # plugins.saq,
             # plugins.granian,
         ],
