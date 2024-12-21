@@ -57,6 +57,7 @@ def create_app() -> Litestar:
         ],
         # on_app_init=[auth.on_app_init],
         # listeners=[account_signals.user_created_event_handler, team_signals.team_created_event_handler],
+        request_max_body_size=100_000_000,
     )
 
 

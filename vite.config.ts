@@ -3,6 +3,7 @@ import path from "path";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import litestar from "litestar-vite-plugin";
 import vue from '@vitejs/plugin-vue';
+import ElementPlus from 'unplugin-element-plus/vite'
 
 const ASSET_URL = process.env.ASSET_URL || "/static/"
 const VITE_PORT = process.env.VITE_PORT || "5173"
@@ -19,6 +20,12 @@ export default defineConfig({
     hmr: {
       host: `${VITE_HOST}`,
     },
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      }
+    }
   },
   plugins: [
     vue(),
@@ -37,6 +44,7 @@ export default defineConfig({
         },
       ],
     }),
+    ElementPlus(),
   ],
   resolve: {
     alias: [
@@ -45,6 +53,11 @@ export default defineConfig({
         replacement: path.resolve(__dirname, "resources/canvas.js"),
       },
     ],
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {api: 'modern-compiler'},
+    }
   },
   build: {
     emptyOutDir: true,
