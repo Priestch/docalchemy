@@ -2,8 +2,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY ./src/app/analyser/docling.py /app/celery_app.py
+RUN pip install celery redis docling
 
-RUN pip install celery redis
+COPY ./src/app/infrastructure/storage.py /app/analyser/storage_service.py
+COPY ./src/app/analyser /app/analyser
 
-CMD ["celery", "-A", "celery_app", "worker", "--loglevel=info"]
+CMD ["celery", "-A", "analyser.tasks:app", "worker", "--loglevel=debug"]
