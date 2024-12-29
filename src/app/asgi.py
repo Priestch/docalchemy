@@ -50,7 +50,7 @@ def create_app() -> Litestar:
         plugins=[
             # plugins.app_config,
             # plugins.structlog,
-            # plugins.alchemy,
+            plugins.alchemy,
             plugins.vite,
             # plugins.saq,
             # plugins.granian,

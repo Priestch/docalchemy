@@ -1,12 +1,12 @@
 from advanced_alchemy.base import UUIDAuditBase
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 
 class File(UUIDAuditBase):
     name: Mapped[str] = mapped_column(nullable=False, default="")
     status: Mapped[int] = mapped_column(default=0)
-    md5_hash: Mapped[str] = mapped_column(nullable=False, default="")
+    hashed_filename: Mapped[str] = mapped_column(String(length=50), nullable=False, default="")
 
 
 class DocElement(UUIDAuditBase):
