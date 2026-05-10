@@ -1,0 +1,18 @@
+FROM python:3.12-slim
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends default-jdk-headless && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+RUN pip install celery redis opendataloader-pdf "advanced-alchemy[uuid]" litestar asyncpg pydantic PyPDF2
+
+COPY src /workspace/src
+COPY docker/pyproject.docling.toml /workspace/pyproject.toml
+
+RUN pip install -e .
+
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+
+CMD ["celery", "-A", "app.infrastructure.workers.opendataloader_worker:celery_app", "worker", "--loglevel=info", "-Q", "analysis.opendataloader"]
