@@ -1,10 +1,12 @@
 FROM python:3.12-slim
 
-WORKDIR /app
+WORKDIR /workspace
 
-RUN pip install celery redis docling
+RUN pip install celery redis docling "advanced-alchemy[uuid]" litestar asyncpg
 
-COPY ./src/app/infrastructure/storage.py /app/analyser/storage_service.py
-COPY ./src/app/analyser /app/analyser
+COPY src /workspace/src
+COPY docker/pyproject.docling.toml /workspace/pyproject.toml
 
-CMD ["celery", "-A", "analyser.tasks:app", "worker", "--loglevel=debug"]
+RUN pip install -e .
+
+CMD ["celery", "-A", "app.analyser.tasks:app", "worker", "--loglevel=debug"]

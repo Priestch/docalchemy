@@ -12,6 +12,7 @@
     "@document-kits/viewer": "*",
     "@element-plus/icons-vue": "^2.3.1",
     "element-plus": "^2.9.1",
+    "redaxios": "^0.5.1",
     "unplugin-element-plus": "^0.8.0",
     "vue": "^3.2.37",
     "vue-router": "4"

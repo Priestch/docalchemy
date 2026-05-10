@@ -3,7 +3,7 @@ from typing import Self
 
 from docling.document_converter import DocumentConverter
 
-from analyser.storage_service import storage
+from app.infrastructure.storage import storage
 
 
 class Analyser:
@@ -17,8 +17,7 @@ class Analyser:
         converter = DocumentConverter()
         return cls(converter)
 
-    def analyse(self, source: Path) -> None:
+    def analyse(self, source: Path) -> str:
         result = self.converter.convert(source)
         doc = result.document.export_to_dict()
-        file_hash = storage.save(doc, suffix=".json")
-        print("DoclingAnalyser", "analyse", source, file_hash)
+        return storage.save(doc, suffix=".json")

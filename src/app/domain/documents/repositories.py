@@ -1,0 +1,20 @@
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from uuid import UUID
+
+from app.domain.documents.entities import SourceDocument
+
+
+class AbstractSourceDocumentRepository(ABC):
+    @abstractmethod
+    async def get(self, id: UUID) -> SourceDocument: ...
+
+    @abstractmethod
+    async def add(self, entity: SourceDocument) -> SourceDocument: ...
+
+    @abstractmethod
+    async def list(self, offset: int = 0, limit: int = 50) -> list[SourceDocument]: ...
+
+    @abstractmethod
+    async def count(self) -> int: ...

@@ -1,16 +1,6 @@
 import logging
 from typing import cast
 
-from advanced_alchemy.extensions.litestar import (
-    AlembicAsyncConfig,
-    AlembicSyncConfig,
-    AsyncSessionConfig,
-    SQLAlchemyAsyncConfig,
-    SQLAlchemySyncConfig,
-    SyncSessionConfig,
-    async_autocommit_before_send_handler,
-    sync_autocommit_before_send_handler,
-)
 from litestar.config.compression import CompressionConfig
 from litestar.config.cors import CORSConfig
 from litestar.config.csrf import CSRFConfig
@@ -30,26 +20,6 @@ csrf = CSRFConfig(
     cookie_name=settings.app.CSRF_COOKIE_NAME,
 )
 cors = CORSConfig(allow_origins=cast("list[str]", settings.app.ALLOWED_CORS_ORIGINS))
-alchemy = SQLAlchemyAsyncConfig(
-    engine_instance=settings.db.get_engine(),
-    before_send_handler=async_autocommit_before_send_handler,
-    session_config=AsyncSessionConfig(expire_on_commit=False),
-    alembic_config=AlembicAsyncConfig(
-        version_table_name=settings.db.MIGRATION_DDL_VERSION_TABLE,
-        script_config=settings.db.MIGRATION_CONFIG,
-        script_location=settings.db.MIGRATION_PATH,
-    ),
-)
-alchemy_sync = SQLAlchemySyncConfig(
-    engine_instance=settings.db.get_sync_engine(),
-    before_send_handler=sync_autocommit_before_send_handler,
-    session_config=SyncSessionConfig(expire_on_commit=False),
-    alembic_config=AlembicSyncConfig(
-        version_table_name=settings.db.MIGRATION_DDL_VERSION_TABLE,
-        script_config=settings.db.MIGRATION_CONFIG,
-        script_location=settings.db.MIGRATION_PATH,
-    ),
-)
 vite = ViteConfig(
     bundle_dir=settings.vite.BUNDLE_DIR,
     resource_dir=settings.vite.RESOURCE_DIR,

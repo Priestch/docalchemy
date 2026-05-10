@@ -17,6 +17,9 @@ importers:
       element-plus:
         specifier: ^2.9.1
         version: 2.9.1(vue@3.5.13)
+      redaxios:
+        specifier: ^0.5.1
+        version: 0.5.1
       unplugin-element-plus:
         specifier: ^0.8.0
         version: 0.8.0(rollup@4.28.1)
@@ -677,6 +680,9 @@ packages:
     resolution: {integrity: sha512-yDMz9g+VaZkqBYS/ozoBJwaBhTbZo3UNYQHNRw1D3UFQB8oHB4uS/tAODO+ZLjGWmUbKnIlOWO+aaIiAxrUWHA==}
     engines: {node: '>= 14.16.0'}
 
+  redaxios@0.5.1:
+    resolution: {integrity: sha512-FSD2AmfdbkYwl7KDExYQlVvIrFz6Yd83pGfaGjBzM9F6rpq8g652Q4Yq5QD4c+nf4g2AgeElv1y+8ajUPiOYMg==}
+
   reusify@1.0.4:
     resolution: {integrity: sha512-U9nH88a3fc/ekCF1l0/UP1IosiuIjyTh7hBvXVMHYgVcfGvt897Xguj2UOLDeI5BG2m7/uwyaLVT6fbtCwTyzw==}
     engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
@@ -1330,6 +1336,8 @@ snapshots:
       picomatch: 2.3.1
 
   readdirp@4.0.2: {}
+
+  redaxios@0.5.1: {}
 
   reusify@1.0.4: {}
 
