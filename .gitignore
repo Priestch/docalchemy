@@ -12,3 +12,5 @@ wheels/
 src/app/domain/web/public
 
 storage/
+.codex
+*.ljx6i9jt
