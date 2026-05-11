@@ -28,7 +28,6 @@ We use bounded Unit of Work types rather than one application-wide UoW:
 
 - `DocumentsUnitOfWork` for document-related use cases
 - `AnalysisUnitOfWork` for analysis run use cases
-- `ComparisonUnitOfWork` for comparison session use cases
 
 Non-transactional dependencies (object storage, queue publishers, provider clients) stay outside the Unit of Work and are injected into use cases separately.
 

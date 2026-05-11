@@ -82,39 +82,15 @@ Indexes:
 - `ix_analysis_artifact_run_id` on `analysis_run_id`
 - `ix_analysis_artifact_type` on `artifact_type`
 
-### comparison_session
-
-A user-facing comparison grouping.
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `UUID` | PK, default `gen_random_uuid()` | |
-| `source_document_id` | `UUID` | FK -> `source_document.id`, NOT NULL | |
-| `created_by` | `VARCHAR(255)` | NULLABLE | Future: user identity |
-| `created_at` | `TIMESTAMPTZ` | NOT NULL, default `now()` | |
-
-### comparison_session_runs (join table)
-
-Many-to-many between comparison sessions and analysis runs.
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `comparison_session_id` | `UUID` | FK -> `comparison_session.id`, NOT NULL | |
-| `analysis_run_id` | `UUID` | FK -> `analysis_run.id`, NOT NULL | |
-
-PK: `(comparison_session_id, analysis_run_id)`
-
 ## Entity-Relationship Diagram
 
 ```
 source_document 1───* analysis_run
 analysis_run    1───* analysis_artifact
-source_document 1───* comparison_session
-comparison_session *───* analysis_run  (via comparison_session_runs)
 ```
 
 ## Migration Strategy
 
-1. Create new tables (`source_document`, `analysis_run`, `analysis_artifact`, `comparison_session`, `comparison_session_runs`).
+1. Create new tables (`source_document`, `analysis_run`, `analysis_artifact`).
 2. Keep old `file` and `analysed_doc` tables temporarily during transition.
 3. Drop old tables in a follow-up migration after Phase 5 cleanup.

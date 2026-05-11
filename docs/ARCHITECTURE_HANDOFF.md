@@ -56,7 +56,6 @@ The application layer should be organized around explicit use cases such as:
 - `CreateAnalysisRun`
 - `DispatchAnalysisRun`
 - `MarkAnalysisRunSucceeded`
-- `CreateComparisonSession`
 - `GetRenderDocument`
 
 ### 3. Use Unit of Work at Application Boundaries
@@ -93,7 +92,6 @@ Good examples:
 
 - `DocumentsUnitOfWork`
 - `AnalysisUnitOfWork`
-- `ComparisonUnitOfWork`
 
 Avoid one giant application-wide Unit of Work.
 
@@ -172,7 +170,6 @@ Need request/response definitions for:
 - document upload
 - analysis run creation
 - render result retrieval
-- comparison session creation
 
 ### 4. Persistence Model
 
@@ -181,7 +178,6 @@ Need concrete DB and storage design for:
 - `SourceDocument`
 - `AnalysisRun`
 - `AnalysisArtifact`
-- `ComparisonSession`
 
 ### 5. ADRs
 
@@ -226,8 +222,7 @@ Then expand to:
 
 1. two providers
 2. two runs on one source document
-3. comparison session
-4. side-by-side viewer panes
+3. side-by-side viewer panes
 
 ## Things Another Agent Should Not Do
 

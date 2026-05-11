@@ -100,7 +100,6 @@ Focus:
 Examples:
 
 - `AnalysisRun` cannot move from `FAILED` to `SUCCESS` without retry
-- `ComparisonSession` cannot include runs from different source documents
 
 These tests should be fast and isolated.
 
@@ -117,7 +116,6 @@ Examples:
 
 - `CreateAnalysisRun` stores provider config snapshot
 - `DispatchAnalysisRun` places work on the correct provider queue
-- `CreateComparisonSession` rejects mixed-document run sets
 
 These tests should use fake repositories and gateways by default.
 
@@ -300,7 +298,6 @@ This is especially useful for:
 
 - aggregate rules
 - run lifecycle
-- comparison validation
 - normalization edge cases
 
 Do not use tests as a substitute for architecture. Tests are most effective when the domain boundaries and use cases are already clear.

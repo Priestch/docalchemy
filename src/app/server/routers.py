@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from litestar import Router
 
 from app.domain.analysis.controllers import AnalysisController, AnalysisRunController
-from app.domain.comparison.controllers import ComparisonController
 from app.domain.documents.controllers import DocumentController
 from app.domain.file.controllers import FileController
 from app.domain.providers.controllers import ProviderController
@@ -22,7 +21,6 @@ api_router = Router(
         AnalysisController,
         AnalysisRunController,
         ProviderController,
-        ComparisonController,
         FileController,
     ],
 )

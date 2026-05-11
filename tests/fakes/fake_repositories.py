@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from app.domain.analysis.entities import AnalysisArtifact, AnalysisRun
 from app.domain.analysis.repositories import AbstractAnalysisArtifactRepository, AbstractAnalysisRunRepository
 from app.domain.analysis.value_objects import AnalysisStatus
-from app.domain.comparison.entities import ComparisonSession
-from app.domain.comparison.repositories import AbstractComparisonSessionRepository
 from app.domain.documents.entities import SourceDocument
 from app.domain.documents.repositories import AbstractSourceDocumentRepository
 
@@ -69,20 +67,5 @@ class FakeAnalysisArtifactRepository(AbstractAnalysisArtifactRepository):
         return [a for a in self._store.values() if a.analysis_run_id == analysis_run_id]
 
     async def add(self, entity: AnalysisArtifact) -> AnalysisArtifact:
-        self._store[entity.id] = entity
-        return entity
-
-
-class FakeComparisonSessionRepository(AbstractComparisonSessionRepository):
-    def __init__(self) -> None:
-        self._store: dict[UUID, ComparisonSession] = {}
-
-    async def get(self, id: UUID) -> ComparisonSession:
-        if id not in self._store:
-            msg = f"ComparisonSession {id} not found"
-            raise ValueError(msg)
-        return self._store[id]
-
-    async def add(self, entity: ComparisonSession) -> ComparisonSession:
         self._store[entity.id] = entity
         return entity

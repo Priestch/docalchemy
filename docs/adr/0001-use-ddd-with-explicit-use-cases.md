@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-The project is growing from a single-provider upload app into a multi-provider document analysis comparison platform. The domain has clear bounded areas: documents, analysis runs, providers, comparison sessions. The orchestration across these areas will become more complex as providers are added.
+The project is growing from a single-provider upload app into a multi-provider document analysis platform. The domain has clear bounded areas: documents, analysis runs, providers. The orchestration across these areas will become more complex as providers are added.
 
 We need an architectural approach that:
 - keeps the core domain model stable as infrastructure changes
@@ -20,8 +20,8 @@ We use Domain-Driven Design in a pragmatic style, with an application layer orga
 
 This means:
 
-- **Bounded contexts** for major domain areas (documents, analysis, providers, comparison)
-- **Explicit aggregates** for core lifecycle entities (SourceDocument, AnalysisRun, ComparisonSession)
+- **Bounded contexts** for major domain areas (documents, analysis, providers)
+- **Explicit aggregates** for core lifecycle entities (SourceDocument, AnalysisRun)
 - **Repositories** at aggregate boundaries
 - **Domain rules** live inside the domain model, not in controllers or services
 - **Application use cases** orchestrate across aggregates and infrastructure ports

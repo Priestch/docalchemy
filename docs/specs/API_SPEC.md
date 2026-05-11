@@ -167,63 +167,6 @@ Download a raw artifact file.
 
 **Response:** `200 OK` -- Binary file
 
-## Comparison Sessions
-
-### POST /api/comparison-sessions
-
-Create a comparison session.
-
-**Request:**
-
-```json
-{
-  "source_document_id": "uuid",
-  "analysis_run_ids": ["uuid-1", "uuid-2"]
-}
-```
-
-**Validations:**
-- All runs must belong to the same source document.
-- At least 2 runs required.
-- All runs must have status `SUCCESS`.
-
-**Response:** `201 Created`
-
-```json
-{
-  "id": "uuid",
-  "source_document_id": "uuid",
-  "analysis_run_ids": ["uuid-1", "uuid-2"],
-  "created_at": "2024-12-31T12:00:00Z"
-}
-```
-
-### GET /api/comparison-sessions/{session_id}
-
-Get comparison session with full render documents.
-
-**Response:** `200 OK`
-
-```json
-{
-  "id": "uuid",
-  "source_document": SourceDocumentDTO,
-  "runs": [
-    {
-      "run_id": "uuid",
-      "provider_id": "docling",
-      "render_document": RenderDocument
-    },
-    {
-      "run_id": "uuid",
-      "provider_id": "opendataloader",
-      "render_document": RenderDocument
-    }
-  ],
-  "created_at": "2024-12-31T12:00:00Z"
-}
-```
-
 ## Providers
 
 ### GET /api/providers
@@ -283,6 +226,4 @@ Standard error codes:
 | `NOT_FOUND` | 404 | Resource not found |
 | `CONFLICT` | 409 | State conflict (e.g. run not ready) |
 | `PROVIDER_NOT_FOUND` | 400 | Unknown provider_id |
-| `RUNS_NOT_SAME_DOCUMENT` | 400 | Comparison runs from different documents |
-| `INSUFFICIENT_RUNS` | 400 | Fewer than 2 runs for comparison |
 | `RUN_NOT_SUCCESS` | 409 | Run has not completed successfully |

@@ -29,7 +29,7 @@ def opendataloader_raw_to_render_document(
     page_dimensions: list[dict] | None = None,
 ) -> RenderDocument:
     if isinstance(raw_json, dict):
-        elements = raw_json.get("elements", raw_json.get("content", []))
+        elements = raw_json.get("elements", raw_json.get("kids", raw_json.get("content", [])))
         if isinstance(elements, list):
             raw_json = elements
         elif isinstance(raw_json, list):
@@ -79,7 +79,7 @@ def _build_pages(elements: list[dict], page_dimensions: list[dict] | None) -> li
 
     page_indices: set[int] = set()
     for el in elements:
-        page_no = el.get("page_number", el.get("page", 1))
+        page_no = _get_page_number(el)
         if isinstance(page_no, int):
             page_indices.add(max(0, page_no - 1))
 
@@ -93,8 +93,12 @@ def _build_pages(elements: list[dict], page_dimensions: list[dict] | None) -> li
     return pages
 
 
+def _get_page_number(element: dict):
+    return element.get("page number", element.get("page_number", element.get("page", 1)))
+
+
 def _get_page_index(element: dict) -> int:
-    page_no = element.get("page_number", element.get("page", 1))
+    page_no = _get_page_number(element)
     if isinstance(page_no, int):
         return max(0, page_no - 1)
     return 0
@@ -141,7 +145,7 @@ def _element_to_block(element: dict, order: int, pages: list[RenderPage]) -> Ren
     page_idx = _get_page_index(element)
     page = pages[page_idx] if page_idx < len(pages) else pages[0]
 
-    bbox_data = element.get("bounding_box", element.get("bbox"))
+    bbox_data = element.get("bounding box", element.get("bounding_box", element.get("bbox")))
     bbox = _normalize_bbox(bbox_data, page)
 
     el_id = str(element.get("id", f"el_{order}"))

@@ -47,10 +47,6 @@ Any stored output produced by an analysis run, such as raw provider output or no
 
 The normalized application-owned representation of a provider result used by the frontend viewer and comparison UI.
 
-### ComparisonSession
-
-A user-facing grouping that compares multiple analysis runs on the same source document.
-
 ## Bounded Contexts
 
 The system should be modeled around the following bounded contexts.
@@ -96,18 +92,6 @@ Primary concepts:
 
 - `ProviderDefinition`
 
-### Comparison Context
-
-Owns:
-
-- compare session composition
-- multi-run loading
-- comparison state
-
-Primary concepts:
-
-- `ComparisonSession`
-
 ### Benchmark Context
 
 Optional later.
@@ -119,7 +103,7 @@ Owns:
 - scores
 - evaluation reports
 
-This context must remain distinct from comparison. Comparison is qualitative product workflow. Benchmarking is quantitative evaluation workflow.
+This context must remain distinct from the viewer. The viewer is qualitative product workflow. Benchmarking is quantitative evaluation workflow.
 
 ## Core Aggregates
 
@@ -159,18 +143,6 @@ Suggested states:
 - `SUCCESS`
 - `FAILED`
 - `CANCELLED`
-
-### ComparisonSession Aggregate
-
-Responsibilities:
-
-- represent a user-visible comparison between multiple analysis runs
-- ensure all compared runs reference the same source document
-
-Suggested invariants:
-
-- every run in a comparison session must belong to the same source document
-- a comparison session must contain at least two runs to be meaningful
 
 ## Domain vs Application Responsibilities
 
@@ -235,13 +207,10 @@ Recommended use cases:
 
 - `UploadSourceDocument`
 - `CreateAnalysisRun`
-- `CreateComparisonRunSet`
 - `DispatchAnalysisRun`
 - `MarkAnalysisRunRunning`
 - `MarkAnalysisRunSucceeded`
 - `MarkAnalysisRunFailed`
-- `CreateComparisonSession`
-- `GetComparisonSession`
 - `GetRenderDocument`
 - `RetryAnalysisRun`
 
@@ -277,7 +246,6 @@ Responsibilities:
 Does not own:
 
 - provider dispatch
-- comparison logic
 
 ### CreateAnalysisRun
 
@@ -315,13 +283,6 @@ Responsibilities:
 
 This use case should open its own Unit of Work when processing a worker result.
 
-### CreateComparisonSession
-
-Responsibilities:
-
-- validate that all selected runs belong to the same source document
-- create a comparison session
-
 ## Domain Events
 
 Domain events may be introduced where they help decouple behavior cleanly.
@@ -344,7 +305,6 @@ Recommended repositories:
 
 - `SourceDocumentRepository`
 - `AnalysisRunRepository`
-- `ComparisonSessionRepository`
 - `ProviderRegistryRepository` or provider registry service abstraction
 
 Repositories should return domain objects or aggregate-root-oriented representations, not provider SDK models.
@@ -365,7 +325,6 @@ The model should preserve these core rules:
 - one source document can have many analysis runs
 - one analysis run belongs to one provider
 - raw provider output is never the frontend contract
-- comparison sessions compare runs on the same source document only
 
 ## Modeling Guidance
 
@@ -375,12 +334,11 @@ Start with:
 
 - `SourceDocument`
 - `AnalysisRun`
-- `ComparisonSession`
 - `RenderDocument` as an application-owned contract
 
 Do not over-model provider internals into the core domain.
 
-Providers are integrations. The core product domain is the workflow around source documents, runs, and comparison.
+Providers are integrations. The core product domain is the workflow around source documents, runs, and viewing.
 
 ## Use Case and Unit Of Work Rule
 
