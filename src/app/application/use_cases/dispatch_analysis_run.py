@@ -29,7 +29,13 @@ class DispatchAnalysisRun:
     def _dispatch_task(self, run_id: UUID, source_document_id: UUID, config: dict, queue: str) -> None:
         from app.infrastructure.workers.celery_app import celery_app
 
-        task_name = "run_analysis" if queue == "analysis.docling" else "run_analysis_opendataloader"
+        task_map = {
+            "analysis.docling": "run_analysis",
+            "analysis.opendataloader": "run_analysis_opendataloader",
+            "analysis.mineru": "run_analysis_mineru",
+            "analysis.surya": "run_analysis_surya",
+        }
+        task_name = task_map.get(queue, "run_analysis")
         celery_app.send_task(
             task_name,
             args=[str(run_id), str(source_document_id), config],
