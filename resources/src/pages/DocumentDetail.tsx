@@ -134,8 +134,8 @@ export function DocumentDetail() {
           >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
           </button>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight truncate max-w-[16rem] sm:max-w-[22rem] md:max-w-[30rem]" title={doc.name}>
               {doc.name}
             </h2>
             <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500 font-medium">
@@ -157,11 +157,24 @@ export function DocumentDetail() {
                 onChange={(e) => setActiveRunId(e.target.value || null)}
               >
                 <option value="">None (Original)</option>
-                {successfulRuns.map(run => (
-                  <option key={run.id} value={run.id}>
-                    {providers.find(p => p.provider_id === run.provider_id)?.display_name || run.provider_id}
-                  </option>
-                ))}
+                {(() => {
+                  // Deduplicate providers: show one option per provider and
+                  // use the latest successful run id for that provider.
+                  const latestByProvider: Record<string, any> = {};
+                  for (const r of successfulRuns) {
+                    // choose the latest by started_at (fallback to created_at)
+                    const ts = r.started_at ? new Date(r.started_at).getTime() : new Date(r.created_at || 0).getTime();
+                    const prev = latestByProvider[r.provider_id];
+                    if (!prev || ts > prev._ts) {
+                      latestByProvider[r.provider_id] = { ...r, _ts: ts };
+                    }
+                  }
+                  return Object.values(latestByProvider).map((run: any) => (
+                    <option key={run.id} value={run.id}>
+                      {providers.find(p => p.provider_id === run.provider_id)?.display_name || run.provider_id}
+                    </option>
+                  ));
+                })()}
               </select>
             </div>
           )}
@@ -174,19 +187,21 @@ export function DocumentDetail() {
             <Info className="w-5 h-5" />
           </button>
           
-          <button 
+          <button
             onClick={() => setShowHistoryModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all"
+            className="inline-flex items-center px-2.5 py-1.5 border border-gray-200 shadow-sm text-xs font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all"
+            title="Runs & Compare"
           >
-            <History className="w-4 h-4 mr-2 text-indigo-500" />
+            <History className="w-3.5 h-3.5 mr-1.5 text-indigo-500" />
             Runs & Compare
           </button>
-          
-          <button 
+
+          <button
             onClick={() => setShowRunModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-100 transition-all"
+            className="inline-flex items-center px-2.5 py-1.5 border border-transparent shadow-sm text-xs font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-all"
+            title="Run Analysis"
           >
-            <Play className="w-4 h-4 mr-2 fill-current" />
+            <Play className="w-3.5 h-3.5 mr-1.5 fill-current" />
             Run Analysis
           </button>
         </div>

@@ -89,6 +89,7 @@ export interface RenderDocument {
       is_header: boolean;
     }[];
   }[];
+  cell_bbox_mode: 'exact' | 'text_extent' | 'none';
   figures: {
     block_id: string;
     image_storage_key: string | null;
