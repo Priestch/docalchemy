@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 from app.infrastructure.render_document import (
     RenderBlock,
     RenderBoundingBox,
@@ -45,12 +43,15 @@ def docling_raw_to_render_document(
         if block is not None:
             block_map[block.id] = block
 
+    any_cell_has_bbox = False
     for table_item in raw_json.get("tables", []):
-        table_block, table = _table_to_block_and_table(table_item, pages)
+        table_block, table, has_bbox = _table_to_block_and_table(table_item, pages)
         if table_block is not None:
             block_map[table_block.id] = table_block
         if table is not None:
             tables.append(table)
+        if has_bbox:
+            any_cell_has_bbox = True
 
     for picture_item in raw_json.get("pictures", []):
         fig_block, figure = _picture_to_block_and_figure(picture_item, pages)
@@ -76,6 +77,7 @@ def docling_raw_to_render_document(
 
     return RenderDocument(
         provider_metadata=provider_metadata,
+        cell_bbox_mode="text_extent" if any_cell_has_bbox else "none",
         pages=pages,
         blocks=list(block_map.values()),
         tables=tables,
@@ -89,7 +91,8 @@ def _extract_pages(raw_json: dict) -> list[RenderPage]:
     pages = []
     for page_key, page_info in pages_data.items():
         if isinstance(page_info, dict):
-            page_index = page_info.get("page", int(page_key) if page_key.isdigit() else 0)
+            raw_page = page_info.get("page", int(page_key) if page_key.isdigit() else 0)
+            page_index = max(0, raw_page - 1)
             width = page_info.get("size", {}).get("width", 612.0)
             height = page_info.get("size", {}).get("height", 792.0)
             pages.append(
@@ -97,7 +100,7 @@ def _extract_pages(raw_json: dict) -> list[RenderPage]:
                     page_index=page_index,
                     width=width,
                     height=height,
-                )
+                ),
             )
     if not pages:
         pages.append(RenderPage(page_index=0, width=612.0, height=792.0))
@@ -105,12 +108,12 @@ def _extract_pages(raw_json: dict) -> list[RenderPage]:
 
 
 def _get_page_for_block(
-    prov: list, pages: list[RenderPage]
+    prov: list, pages: list[RenderPage],
 ) -> tuple[int, RenderBoundingBox | None]:
     if not prov:
         return 0, None
     first_prov = prov[0]
-    page_no = first_prov.get("page", 1) - 1
+    page_no = first_prov.get("page_no", first_prov.get("page", 1)) - 1
     page_idx = max(0, min(page_no, len(pages) - 1))
     page = pages[page_idx]
 
@@ -138,6 +141,46 @@ def _get_page_for_block(
         y0=max(0.0, min(1.0, y0)),
         x1=max(0.0, min(1.0, x1)),
         y1=max(0.0, min(1.0, y1)),
+    )
+
+
+def _cell_bbox_to_render(
+    cell_bbox: dict | None, page: RenderPage,
+) -> RenderBoundingBox | None:
+    """Convert a Docling table-cell bbox (page-pixel dict with l/t/r/b) to a
+    normalized RenderBoundingBox. Docling cells carry their own ``bbox`` dict
+    (unlike block-level ``prov``), so this is separate from
+    ``_get_page_for_block``. Origin is BOTTOMLEFT (y-up from bottom); we store
+    y as distance-from-top (y-down) to match the rest of the render doc.
+    """
+    if not isinstance(cell_bbox, dict):
+        return None
+    if not ({"l", "t", "r", "b"} <= cell_bbox.keys()):
+        return None
+
+    coord_origin = cell_bbox.get("coord_origin", "BOTTOMLEFT")
+    l = cell_bbox.get("l", 0)
+    t = cell_bbox.get("t", 0)
+    r = cell_bbox.get("r", 0)
+    b = cell_bbox.get("b", 0)
+
+    if coord_origin == "BOTTOMLEFT":
+        y0_raw = (page.height - t) if page.height else 0
+        y1_raw = (page.height - b) if page.height else 0
+    else:
+        y0_raw = t
+        y1_raw = b
+
+    x0 = l / page.width if page.width else 0
+    y0 = y0_raw / page.height if page.height else 0
+    x1 = r / page.width if page.width else 0
+    y1 = y1_raw / page.height if page.height else 0
+
+    return RenderBoundingBox(
+        x0=max(0.0, min(1.0, min(x0, x1))),
+        y0=max(0.0, min(1.0, min(y0, y1))),
+        x1=max(0.0, min(1.0, max(x0, x1))),
+        y1=max(0.0, min(1.0, max(y0, y1))),
     )
 
 
@@ -171,8 +214,8 @@ def _text_to_block(text_item: dict, pages: list[RenderPage]) -> RenderBlock | No
 
 
 def _table_to_block_and_table(
-    table_item: dict, pages: list[RenderPage]
-) -> tuple[RenderBlock | None, RenderTable | None]:
+    table_item: dict, pages: list[RenderPage],
+) -> tuple[RenderBlock | None, RenderTable | None, bool]:
     prov = table_item.get("prov", [])
     page_idx, bbox = _get_page_for_block(prov, pages)
 
@@ -192,7 +235,7 @@ def _table_to_block_and_table(
     data = table_item.get("data", {})
     grid = data.get("grid", [])
     if not grid:
-        return block, RenderTable(block_id=block_id, rows=0, cols=0)
+        return block, RenderTable(block_id=block_id, rows=0, cols=0), False
 
     # Flatten grid: Docling may return nested lists or flat cell dicts
     flat_cells = []
@@ -205,13 +248,16 @@ def _table_to_block_and_table(
             flat_cells.append(item)
 
     if not flat_cells:
-        return block, RenderTable(block_id=block_id, rows=0, cols=0)
+        return block, RenderTable(block_id=block_id, rows=0, cols=0), False
 
     max_row = max(cell.get("start_row_offset_idx", 0) + cell.get("row_span", 1) for cell in flat_cells)
     max_col = max(cell.get("start_col_offset_idx", 0) + cell.get("col_span", 1) for cell in flat_cells)
 
     cells = []
+    table_page = pages[page_idx] if 0 <= page_idx < len(pages) else pages[-1]
     for cell in flat_cells:
+        # Docling cells carry their own bbox dict (l/t/r/b), not prov.
+        cell_bbox = _cell_bbox_to_render(cell.get("bbox"), table_page)
         cells.append(
             RenderCell(
                 row_index=cell.get("start_row_offset_idx", 0),
@@ -220,19 +266,22 @@ def _table_to_block_and_table(
                 col_span=cell.get("col_span", 1),
                 text=cell.get("text", "").get("markdown", cell.get("text", "")) if isinstance(cell.get("text"), dict) else str(cell.get("text", "")),
                 is_header=cell.get("column_header", False),
-            )
+                bbox=cell_bbox,
+            ),
         )
+
+    has_any_bbox = any(c.bbox is not None for c in cells)
 
     return block, RenderTable(
         block_id=block_id,
         rows=max_row,
         cols=max_col,
         cells=cells,
-    )
+    ), has_any_bbox
 
 
 def _picture_to_block_and_figure(
-    picture_item: dict, pages: list[RenderPage]
+    picture_item: dict, pages: list[RenderPage],
 ) -> tuple[RenderBlock | None, RenderFigure | None]:
     prov = picture_item.get("prov", [])
     page_idx, bbox = _get_page_for_block(prov, pages)

@@ -127,3 +127,122 @@ class TestOpenDataLoaderNormalizer:
         result = opendataloader_raw_to_render_document([], {})
         assert isinstance(result, RenderDocument)
         assert len(result.blocks) == 0
+
+
+# --- Real OpenDataLoader table format (rows > cells with bboxes) ---
+
+SAMPLE_REAL_TABLE_OUTPUT = [
+    {
+        "id": 100,
+        "type": "table",
+        "content": "",
+        "page number": 1,
+        "bounding box": [72.0, 400.0, 540.0, 600.0],
+        "number of rows": 2,
+        "number of columns": 2,
+        "rows": [
+            {
+                "type": "table row",
+                "row number": 1,
+                "cells": [
+                    {
+                        "type": "table cell",
+                        "page number": 1,
+                        "bounding box": [72.0, 570.0, 300.0, 600.0],
+                        "row number": 1,
+                        "column number": 1,
+                        "row span": 1,
+                        "column span": 1,
+                        "kids": [{"type": "paragraph", "content": "Name"}],
+                    },
+                    {
+                        "type": "table cell",
+                        "page number": 1,
+                        "bounding box": [300.0, 570.0, 540.0, 600.0],
+                        "row number": 1,
+                        "column number": 2,
+                        "row span": 1,
+                        "column span": 1,
+                        "kids": [{"type": "paragraph", "content": "Value"}],
+                    },
+                ],
+            },
+            {
+                "type": "table row",
+                "row number": 2,
+                "cells": [
+                    {
+                        "type": "table cell",
+                        "page number": 1,
+                        "bounding box": [72.0, 540.0, 300.0, 570.0],
+                        "row number": 2,
+                        "column number": 1,
+                        "row span": 1,
+                        "column span": 1,
+                        "kids": [{"type": "paragraph", "content": "CPU"}],
+                    },
+                    {
+                        "type": "table cell",
+                        "page number": 1,
+                        "bounding box": [300.0, 540.0, 540.0, 570.0],
+                        "row number": 2,
+                        "column number": 2,
+                        "row span": 1,
+                        "column span": 1,
+                        "kids": [{"type": "paragraph", "content": "M3 Max"}],
+                    },
+                ],
+            },
+        ],
+    },
+]
+
+
+class TestOpenDataLoaderRealTableFormat:
+    def test_table_has_cells(self) -> None:
+        result = opendataloader_raw_to_render_document(
+            SAMPLE_REAL_TABLE_OUTPUT, {}, page_dimensions=SAMPLE_PAGE_DIMENSIONS
+        )
+        assert len(result.tables) == 1
+        table = result.tables[0]
+        assert table.rows == 2
+        assert table.cols == 2
+        assert len(table.cells) == 4
+
+    def test_cell_text_from_kids(self) -> None:
+        result = opendataloader_raw_to_render_document(
+            SAMPLE_REAL_TABLE_OUTPUT, {}, page_dimensions=SAMPLE_PAGE_DIMENSIONS
+        )
+        table = result.tables[0]
+        cell_texts = {(c.row_index, c.col_index): c.text for c in table.cells}
+        assert cell_texts[(0, 0)] == "Name"
+        assert cell_texts[(0, 1)] == "Value"
+        assert cell_texts[(1, 0)] == "CPU"
+        assert cell_texts[(1, 1)] == "M3 Max"
+
+    def test_cell_has_bbox(self) -> None:
+        result = opendataloader_raw_to_render_document(
+            SAMPLE_REAL_TABLE_OUTPUT, {}, page_dimensions=SAMPLE_PAGE_DIMENSIONS
+        )
+        table = result.tables[0]
+        for cell in table.cells:
+            assert cell.bbox is not None, f"Cell [{cell.row_index},{cell.col_index}] missing bbox"
+            assert 0.0 <= cell.bbox.x0 <= 1.0
+            assert 0.0 <= cell.bbox.y0 <= 1.0
+            assert 0.0 <= cell.bbox.x1 <= 1.0
+            assert 0.0 <= cell.bbox.y1 <= 1.0
+
+    def test_cell_row_col_span(self) -> None:
+        result = opendataloader_raw_to_render_document(
+            SAMPLE_REAL_TABLE_OUTPUT, {}, page_dimensions=SAMPLE_PAGE_DIMENSIONS
+        )
+        table = result.tables[0]
+        for cell in table.cells:
+            assert cell.row_span == 1
+            assert cell.col_span == 1
+
+    def test_cell_bbox_mode_is_exact(self) -> None:
+        result = opendataloader_raw_to_render_document(
+            SAMPLE_REAL_TABLE_OUTPUT, {}, page_dimensions=SAMPLE_PAGE_DIMENSIONS
+        )
+        assert result.cell_bbox_mode == "exact"

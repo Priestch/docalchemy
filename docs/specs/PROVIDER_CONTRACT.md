@@ -116,6 +116,7 @@ The normalizer:
 - Receives `provider_metadata` with `provider_id`, `provider_version`, `raw_artifact_storage_key`, `normalized_at`
 - Returns a `RenderDocument` (see `RENDER_DOCUMENT_SCHEMA.md`)
 - Must normalize all coordinates to `[0, 1]` top-left origin
+- Must use canonical `block_type` names so the frontend overlay renders correctly (see `ANNOTATION_OVERLAY_PIPELINE.md`)
 
 ## Provider Definition (Registry)
 

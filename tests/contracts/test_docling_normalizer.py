@@ -98,3 +98,111 @@ class TestDoclingNormalizer:
         assert isinstance(result, RenderDocument)
         assert len(result.blocks) == 0
         assert len(result.pages) >= 1  # default page
+
+
+SAMPLE_TABLE_OUTPUT: dict = {
+    "name": "table_test.pdf",
+    "page_count": 1,
+    "pages": {
+        "0": {
+            "page": 0,
+            "size": {"width": 612.0, "height": 792.0},
+        }
+    },
+    "texts": [],
+    "tables": [
+        {
+            "text": "",
+            "label": "table",
+            "prov": [{"page": 1, "bbox": {"l": 72, "t": 600, "r": 540, "b": 400}, "coord_origin": "BOTTOMLEFT"}],
+            "self_ref": "tbl_0",
+            "data": {
+                "grid": [
+                    {
+                        "start_row_offset_idx": 0,
+                        "start_col_offset_idx": 0,
+                        "row_span": 1,
+                        "col_span": 1,
+                        "text": "品牌",
+                        "column_header": True,
+                        "prov": [{"page": 1, "bbox": {"l": 72, "t": 600, "r": 200, "b": 570}, "coord_origin": "BOTTOMLEFT"}],
+                    },
+                    {
+                        "start_row_offset_idx": 0,
+                        "start_col_offset_idx": 1,
+                        "row_span": 1,
+                        "col_span": 1,
+                        "text": "最低价",
+                        "column_header": True,
+                        "prov": [{"page": 1, "bbox": {"l": 200, "t": 600, "r": 320, "b": 570}, "coord_origin": "BOTTOMLEFT"}],
+                    },
+                    {
+                        "start_row_offset_idx": 1,
+                        "start_col_offset_idx": 0,
+                        "row_span": 1,
+                        "col_span": 1,
+                        "text": "瑞幸",
+                        "column_header": False,
+                        "prov": [{"page": 1, "bbox": {"l": 72, "t": 570, "r": 200, "b": 540}, "coord_origin": "BOTTOMLEFT"}],
+                    },
+                    {
+                        "start_row_offset_idx": 1,
+                        "start_col_offset_idx": 1,
+                        "row_span": 1,
+                        "col_span": 1,
+                        "text": "14",
+                        "column_header": False,
+                        "prov": [{"page": 1, "bbox": {"l": 200, "t": 570, "r": 320, "b": 540}, "coord_origin": "BOTTOMLEFT"}],
+                    },
+                ]
+            },
+        }
+    ],
+    "pictures": [],
+    "main-text": {
+        "children": [
+            {"$ref": "tbl_0"},
+        ]
+    },
+}
+
+
+class TestDoclingTableNormalizer:
+    def test_table_has_cells(self) -> None:
+        result = docling_raw_to_render_document(SAMPLE_TABLE_OUTPUT, {})
+        assert len(result.tables) == 1
+        table = result.tables[0]
+        assert table.rows == 2
+        assert table.cols == 2
+        assert len(table.cells) == 4
+
+    def test_table_cell_has_bbox(self) -> None:
+        result = docling_raw_to_render_document(SAMPLE_TABLE_OUTPUT, {})
+        table = result.tables[0]
+        for cell in table.cells:
+            assert cell.bbox is not None, f"Cell [{cell.row_index},{cell.col_index}] missing bbox"
+            assert 0.0 <= cell.bbox.x0 <= 1.0
+            assert 0.0 <= cell.bbox.y0 <= 1.0
+            assert 0.0 <= cell.bbox.x1 <= 1.0
+            assert 0.0 <= cell.bbox.y1 <= 1.0
+
+    def test_table_cell_preserves_text(self) -> None:
+        result = docling_raw_to_render_document(SAMPLE_TABLE_OUTPUT, {})
+        table = result.tables[0]
+        cell_texts = {(c.row_index, c.col_index): c.text for c in table.cells}
+        assert cell_texts[(0, 0)] == "品牌"
+        assert cell_texts[(0, 1)] == "最低价"
+        assert cell_texts[(1, 0)] == "瑞幸"
+        assert cell_texts[(1, 1)] == "14"
+
+    def test_table_cell_preserves_header_flag(self) -> None:
+        result = docling_raw_to_render_document(SAMPLE_TABLE_OUTPUT, {})
+        table = result.tables[0]
+        header_cells = [c for c in table.cells if c.is_header]
+        assert len(header_cells) == 2
+        data_cells = [c for c in table.cells if not c.is_header]
+        assert len(data_cells) == 2
+
+    def test_table_cell_bbox_mode_is_text_extent(self) -> None:
+        result = docling_raw_to_render_document(SAMPLE_TABLE_OUTPUT, {})
+        assert result.cell_bbox_mode == "text_extent"

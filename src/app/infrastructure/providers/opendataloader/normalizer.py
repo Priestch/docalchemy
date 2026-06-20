@@ -43,6 +43,8 @@ def opendataloader_raw_to_render_document(
     figures: list[RenderFigure] = []
     reading_order: list[str] = []
 
+    any_cell_has_bbox = False
+
     for idx, element in enumerate(raw_json):
         block = _element_to_block(element, idx, pages)
         if block is not None:
@@ -50,9 +52,12 @@ def opendataloader_raw_to_render_document(
             reading_order.append(block.id)
 
             if block.block_type == "table":
-                table = _element_to_table(element, block.id)
+                page = pages[block.page_index] if block.page_index < len(pages) else pages[0]
+                table, has_bbox = _element_to_table(element, block.id, page)
                 if table is not None:
                     tables.append(table)
+                if has_bbox:
+                    any_cell_has_bbox = True
             elif block.block_type == "figure":
                 figure = _element_to_figure(element, block.id)
                 if figure is not None:
@@ -63,6 +68,7 @@ def opendataloader_raw_to_render_document(
 
     return RenderDocument(
         provider_metadata=provider_metadata,
+        cell_bbox_mode="exact" if any_cell_has_bbox else "none",
         pages=pages,
         blocks=blocks,
         tables=tables,
@@ -174,10 +180,68 @@ def _element_to_block(element: dict, order: int, pages: list[RenderPage]) -> Ren
     )
 
 
-def _element_to_table(element: dict, block_id: str) -> RenderTable | None:
+def _element_to_table(element: dict, block_id: str, page: RenderPage) -> tuple[RenderTable | None, bool]:
+    # --- Path 1: Real OpenDataLoader format ---
+    # Structure: element["rows"] = [{"type": "table row", "cells": [{"type": "table cell", ...}]}]
+    raw_rows = element.get("rows")
+    if isinstance(raw_rows, list) and raw_rows:
+        num_rows = element.get("number of rows", 0)
+        num_cols = element.get("number of columns", 0)
+        cells: list[RenderCell] = []
+
+        for row_obj in raw_rows:
+            if not isinstance(row_obj, dict):
+                continue
+            for cell_obj in row_obj.get("cells", []):
+                if not isinstance(cell_obj, dict):
+                    continue
+
+                row_idx = cell_obj.get("row number", 1) - 1  # 1-indexed -> 0-indexed
+                col_idx = cell_obj.get("column number", 1) - 1
+                row_span = cell_obj.get("row span", 1)
+                col_span = cell_obj.get("column span", 1)
+
+                # Extract text from nested kids paragraphs
+                kids = cell_obj.get("kids", [])
+                text_parts = []
+                for kid in kids:
+                    if isinstance(kid, dict):
+                        text_parts.append(kid.get("content", kid.get("text", "")))
+                cell_text = " ".join(str(t) for t in text_parts if t)
+
+                # Normalize cell bbox
+                cell_bbox_data = cell_obj.get("bounding box", cell_obj.get("bounding_box"))
+                cell_bbox = _normalize_bbox(cell_bbox_data, page)
+
+                # Track max row/col from actual cell data
+                num_rows = max(num_rows, row_idx + row_span)
+                num_cols = max(num_cols, col_idx + col_span)
+
+                cells.append(
+                    RenderCell(
+                        row_index=row_idx,
+                        col_index=col_idx,
+                        row_span=row_span,
+                        col_span=col_span,
+                        text=cell_text,
+                        is_header=row_idx == 0,
+                        bbox=cell_bbox,
+                    )
+                )
+
+        has_any_bbox = any(c.bbox is not None for c in cells)
+        return RenderTable(
+            block_id=block_id,
+            rows=num_rows,
+            cols=num_cols,
+            cells=cells,
+        ), has_any_bbox
+
+    # --- Path 2: Simplified 2D grid format (used in tests / simple integrations) ---
+    # Structure: element["cells"] = [[{text, is_header}, ...], ...]
     table_data = element.get("table", element.get("data", element.get("cells")))
     if not table_data:
-        return RenderTable(block_id=block_id, rows=0, cols=0)
+        return RenderTable(block_id=block_id, rows=0, cols=0), False
 
     if isinstance(table_data, list) and table_data and isinstance(table_data[0], list):
         rows = len(table_data)
@@ -195,8 +259,9 @@ def _element_to_table(element: dict, block_id: str) -> RenderTable | None:
                         is_header=is_header,
                     )
                 )
-        return RenderTable(block_id=block_id, rows=rows, cols=cols, cells=cells)
+        return RenderTable(block_id=block_id, rows=rows, cols=cols, cells=cells), False
 
+    # --- Path 3: Dict with explicit rows/cols/cells ---
     if isinstance(table_data, dict):
         rows = table_data.get("rows", 0)
         cols = table_data.get("cols", 0)
@@ -211,9 +276,9 @@ def _element_to_table(element: dict, block_id: str) -> RenderTable | None:
                     is_header=cell.get("is_header", False),
                 )
             )
-        return RenderTable(block_id=block_id, rows=rows, cols=cols, cells=cells)
+        return RenderTable(block_id=block_id, rows=rows, cols=cols, cells=cells), False
 
-    return None
+    return None, False
 
 
 def _element_to_figure(element: dict, block_id: str) -> RenderFigure | None:

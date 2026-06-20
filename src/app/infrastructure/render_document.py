@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -54,6 +56,7 @@ class RenderPage(BaseModel):
 
 class RenderDocument(BaseModel):
     provider_metadata: dict = Field(default_factory=dict)
+    cell_bbox_mode: Literal["exact", "text_extent", "none"] = "none"
     pages: list[RenderPage] = Field(default_factory=list)
     blocks: list[RenderBlock] = Field(default_factory=list)
     tables: list[RenderTable] = Field(default_factory=list)

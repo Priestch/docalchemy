@@ -194,6 +194,13 @@ The `provider_metadata` object carries provenance information:
 
 The canonical implementation is in `src/app/infrastructure/render_document.py` as Pydantic v2 models. The JSON schema above is the authoritative contract; the Pydantic model is its runtime representation.
 
+## Downstream Consumers
+
+The `RenderDocument` is consumed by:
+
+1. **Per-page annotation API** — `GET /api/analysis-runs/{runId}/render/pages/{pageIndex}/annotations` returns `{ page, blocks }` for a single page
+2. **Frontend overlay plugin** — The `blockAnnotations` plugin fetches annotations and renders colored overlay boxes on the PDF viewer. See `ANNOTATION_OVERLAY_PIPELINE.md` for the full rendering pipeline and coordinate transformations.
+
 ## Invariants
 
 1. Every block ID referenced in `pages[].children`, `tables[].block_id`, `figures[].block_id`, `blocks[].children`, and `reading_order` must exist in the `blocks` array.
