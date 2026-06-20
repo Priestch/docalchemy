@@ -72,3 +72,9 @@ class SqlAlchemySourceDocumentRepository(AbstractSourceDocumentRepository):
         stmt = select(func.count()).select_from(SourceDocumentORM)
         result = await self._session.execute(stmt)
         return result.scalar_one()
+
+    async def delete(self, id: UUID) -> None:
+        stmt = select(SourceDocumentORM).where(SourceDocumentORM.id == id)
+        result = await self._session.execute(stmt)
+        orm = result.scalar_one()
+        await self._session.delete(orm)

@@ -18,3 +18,6 @@ class AbstractSourceDocumentRepository(ABC):
 
     @abstractmethod
     async def count(self) -> int: ...
+
+    @abstractmethod
+    async def delete(self, id: UUID) -> None: ...

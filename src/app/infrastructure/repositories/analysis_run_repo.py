@@ -39,6 +39,15 @@ class SqlAlchemyAnalysisRunRepository(AbstractAnalysisRunRepository):
         orm = result.scalar_one()
         return _to_entity(orm)
 
+    async def get_active_runs(self) -> list[AnalysisRun]:
+        stmt = (
+            select(AnalysisRunORM)
+            .where(AnalysisRunORM.status.in_(["pending", "queued", "running"]))
+            .order_by(AnalysisRunORM.created_at.desc())
+        )
+        result = await self._session.execute(stmt)
+        return [_to_entity(row) for row in result.scalars().all()]
+
     async def get_by_document(self, source_document_id: UUID) -> list[AnalysisRun]:
         stmt = (
             select(AnalysisRunORM)

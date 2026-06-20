@@ -102,7 +102,10 @@ class DatabaseSettings:
                     return b"\x01" + bin_value
 
                 def decoder(bin_value: bytes) -> Any:
-                    return decode_json(bin_value[1:])
+                    # Handle both binary (starts with 0x01 version byte) and text formats
+                    if bin_value and bin_value[0:1] == b"\x01":
+                        return decode_json(bin_value[1:])
+                    return decode_json(bin_value)
 
                 dbapi_connection.await_(
                     dbapi_connection.driver_connection.set_type_codec(

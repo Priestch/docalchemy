@@ -26,10 +26,8 @@ class GetRenderDocument:
                 raise ValueError(msg)
 
             artifacts = await uow.artifacts.get_by_run(run_id)
-            render_artifact = next(
-                (a for a in artifacts if a.artifact_type == ArtifactType.RENDER_DOCUMENT),
-                None,
-            )
+            render_docs = [a for a in artifacts if a.artifact_type == ArtifactType.RENDER_DOCUMENT]
+            render_artifact = render_docs[-1] if render_docs else None
 
             if render_artifact is None:
                 msg = f"No render document artifact found for run {run_id}"

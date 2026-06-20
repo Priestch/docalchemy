@@ -66,7 +66,7 @@ def upgrade() -> None:
                 sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
                 sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
                 sa.PrimaryKeyConstraint("id"),
-                sa.ForeignKeyConstraint(["source_document_id"], ["source_document.id"]),
+                sa.ForeignKeyConstraint(["source_document_id"], ["source_document.id"], ondelete="CASCADE"),
             )
 
             op.create_table(
@@ -80,7 +80,7 @@ def upgrade() -> None:
                 sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
                 sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
                 sa.PrimaryKeyConstraint("id"),
-                sa.ForeignKeyConstraint(["analysis_run_id"], ["analysis_run.id"]),
+                sa.ForeignKeyConstraint(["analysis_run_id"], ["analysis_run.id"], ondelete="CASCADE"),
             )
 
             op.create_table(

@@ -23,8 +23,21 @@ class SourceDocumentDTO(BaseModel):
     updated_at: datetime
 
 
+class LatestRunSummary(BaseModel):
+    id: UUID
+    provider_id: str
+    status: str
+    created_at: datetime
+
+
+class DocumentRunsDTO(BaseModel):
+    document_id: UUID
+    runs: list[LatestRunSummary] = Field(default_factory=list)
+
+
 class SourceDocumentListDTO(BaseModel):
     items: list[SourceDocumentDTO]
+    document_runs: list[DocumentRunsDTO] = Field(default_factory=list)
     total: int
     offset: int
     limit: int

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 class AnalysisRunORM(UUIDAuditBase):
     __tablename__ = "analysis_run"
 
-    source_document_id: Mapped[str] = mapped_column(ForeignKey("source_document.id"), nullable=False)
+    source_document_id: Mapped[str] = mapped_column(ForeignKey("source_document.id", ondelete="CASCADE"), nullable=False)
     provider_id: Mapped[str] = mapped_column(String(length=50), nullable=False)
     provider_version: Mapped[str] = mapped_column(String(length=20), nullable=False, default="")
     status: Mapped[str] = mapped_column(

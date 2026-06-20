@@ -4,6 +4,9 @@ from uuid import UUID
 
 from litestar import Controller, get, post
 from litestar.di import Provide
+from litestar.exceptions import NotFoundException
+from litestar.response import Response
+from sqlalchemy.exc import NoResultFound
 
 from app.application.use_cases.create_analysis_run import CreateAnalysisRun
 from app.application.use_cases.dispatch_analysis_run import DispatchAnalysisRun
@@ -125,3 +128,88 @@ class AnalysisRunController(Controller):
         get_render_use_case: GetRenderDocument,
     ) -> RenderDocument:
         return await get_render_use_case.execute(run_id)
+
+    @get("/{run_id:uuid}/render/pages/{page_index:int}/annotations")
+    async def get_page_annotations(
+        self,
+        run_id: UUID,
+        page_index: int,
+        get_render_use_case: GetRenderDocument,
+    ) -> Response:
+        try:
+            render_doc = await get_render_use_case.execute(run_id)
+        except (ValueError, FileNotFoundError):
+            return Response(
+                content={"page": None, "blocks": []},
+                status_code=200,
+            )
+
+        page = next(
+            (p for p in render_doc.pages if p.page_index == page_index),
+            None,
+        )
+        if page is None:
+            return Response(
+                content={"page": None, "blocks": []},
+                status_code=200,
+            )
+
+        blocks = [
+            b for b in render_doc.blocks if b.page_index == page_index
+        ]
+        tables = [
+            t for t in render_doc.tables
+            if any(
+                b.page_index == page_index
+                for b in render_doc.blocks
+                if b.id == t.block_id
+            )
+        ]
+        return Response(
+            content={
+                "page": {"width": page.width, "height": page.height},
+                "blocks": [b.model_dump() for b in blocks],
+                "tables": [t.model_dump() for t in tables],
+                "cell_bbox_mode": render_doc.cell_bbox_mode,
+            },
+            status_code=200,
+        )
+
+    @get("/{run_id:uuid}/poll")
+    async def poll_run(
+        self,
+        run_id: UUID,
+        analysis_uow: SqlAlchemyAnalysisUnitOfWork,
+        timeout: int = 30,
+    ) -> Response:
+        """Long poll: hold connection until run status changes or timeout."""
+        import asyncio
+
+        try:
+            async with analysis_uow:
+                initial_run = await analysis_uow.runs.get(run_id)
+
+            initial_status = initial_run.status
+            terminal = initial_status in {"success", "failed", "cancelled"}
+
+            if terminal:
+                return Response(content={"status": initial_status, "changed": True}, status_code=200)
+
+            deadline = asyncio.get_event_loop().time() + min(timeout, 60)
+            while asyncio.get_event_loop().time() < deadline:
+                await asyncio.sleep(1)
+                try:
+                    async with analysis_uow:
+                        run = await analysis_uow.runs.get(run_id)
+                except NoResultFound:
+                    raise NotFoundException(detail="Analysis run not found")
+                if run.status != initial_status:
+                    return Response(content={"status": run.status, "changed": True}, status_code=200)
+                if run.status in {"success", "failed", "cancelled"}:
+                    return Response(content={"status": run.status, "changed": True}, status_code=200)
+
+            return Response(content={"status": initial_status, "changed": False}, status_code=200)
+        except NoResultFound:
+            raise NotFoundException(detail="Analysis run not found")
+        except Exception:
+            return Response(content={"status": "error", "changed": False}, status_code=200)
