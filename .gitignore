@@ -28,3 +28,10 @@ storage/
 
 # Test artifacts
 test-results/
+
+# runtime / personal / duplicate artifacts
+/cache/
+/opencode.json
+/resources/package-lock.json
+/fonduer/
+/docalchemy/
