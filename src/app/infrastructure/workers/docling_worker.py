@@ -15,6 +15,7 @@ from app.infrastructure.providers.docling.adapter import DoclingAdapter
 from app.infrastructure.providers.docling.normalizer import docling_raw_to_render_document
 from app.infrastructure.storage import StorageService
 from app.infrastructure.workers.celery_app import celery_app
+from palitra import run as async_run
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 @celery_app.task(bind=True, name="run_analysis", queue="analysis.docling")
 def run_analysis(self, run_id: str, source_document_id: str, config: dict) -> None:
     from app.config.db import alchemy
+    from app.infrastructure.uow import SqlAlchemyAnalysisUnitOfWork
 
     registry = create_default_registry()
     definition = registry.get("docling")
@@ -31,10 +33,7 @@ def run_analysis(self, run_id: str, source_document_id: str, config: dict) -> No
     )
     adapter = DoclingAdapter(storage=storage)
 
-    import asyncio
-
     async def _run() -> None:
-        from app.infrastructure.uow import SqlAlchemyAnalysisUnitOfWork
 
         async with alchemy.get_session() as session:
             uow = SqlAlchemyAnalysisUnitOfWork(session)
@@ -88,7 +87,7 @@ def run_analysis(self, run_id: str, source_document_id: str, config: dict) -> No
             )
 
     try:
-        asyncio.run(_run())
+        async_run(_run())
     except Exception:
         logger.exception("Analysis failed for run %s", run_id)
         import traceback
@@ -106,6 +105,6 @@ def run_analysis(self, run_id: str, source_document_id: str, config: dict) -> No
                 )
 
         try:
-            asyncio.run(_mark_failed())
+            async_run(_mark_failed())
         except Exception:
             logger.exception("Failed to mark run as failed")
