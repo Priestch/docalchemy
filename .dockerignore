@@ -166,4 +166,13 @@ src/app/db/migrations/
 src/app/server
 src/app/domain/web
 src/app/config/app.py
+storage/
+.git/
+.gitignore
+*.pdf
+tests/
+docs/
+scripts/
+.idea/
+.vscode/
 

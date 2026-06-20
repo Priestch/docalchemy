@@ -7,10 +7,24 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+/.venv
+
+# Environment
+.env
+!.env.example
+
+# Node
+node_modules/
+
+# IDE / caches
+.idea/
+.pytest_cache/
 
 src/app/domain/web/public
 
 storage/
 .codex
 *.ljx6i9jt
+
+# Test artifacts
+test-results/
