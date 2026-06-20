@@ -117,6 +117,78 @@ lock:                                             ## Rebuild lockfiles from scra
 	@pdm update --update-eager --group :all
 
 # =============================================================================
+# Dev Server
+# =============================================================================
+.PHONY: dev
+dev:												## Start all services (infra, workers, backend, frontend)
+	@echo "=> Starting all services"
+	@$(MAKE) dev-infra
+	@echo "=> Waiting for infrastructure to be healthy..."
+	@until docker compose -p docalchemy -f docker-compose.infra.yml exec -T db pg_isready -U app 2>/dev/null; do sleep 1; done
+	@$(MAKE) dev-workers-rebuild dev-backend dev-frontend
+	@sleep 2
+	@echo ""
+	@echo "  Backend:    http://localhost:8000"
+	@echo "  Frontend:   http://localhost:5173"
+	@echo ""
+	@echo "  make dev-stop   to stop all services"
+
+.PHONY: dev-infra
+dev-infra:											## Start PostgreSQL & Redis
+	@echo "=> Starting PostgreSQL & Redis"
+	@docker compose -p docalchemy -f docker-compose.infra.yml up -d db redis 2>/dev/null || \
+		( echo "   Ports in use — stopping stale containers first..." && \
+		  docker compose -p docalchemy -f docker-compose.infra.yml down 2>/dev/null; \
+		  docker compose -p docalchemy -f docker-compose.infra.yml up -d db redis )
+
+.PHONY: dev-workers
+dev-workers:										## Start all Celery workers in Docker (no rebuild)
+	@echo "=> Starting workers (docling, mineru, opendataloader, surya)"
+	@docker compose -p docalchemy -f docker-compose.infra.yml up -d docling mineru opendataloader surya
+
+.PHONY: dev-workers-rebuild
+dev-workers-rebuild:								## Rebuild & start all Celery workers
+	@echo "=> Rebuilding & starting workers (docling, mineru, opendataloader, surya)"
+	@docker compose -p docalchemy -f docker-compose.infra.yml up -d --build docling mineru opendataloader surya
+
+.PHONY: dev-backend
+dev-backend:										## Start the Litestar backend on port 8000
+	@echo "=> Starting backend on port 8000"
+	DATABASE_URL="postgresql+asyncpg://app:app@localhost:15433/app" \
+	PYTHONPATH=src LITESTAR_APP=app.asgi:app $(ENV_PREFIX)litestar run --host 0.0.0.0 --port 8000 & echo $$! > /tmp/docalchemy-backend.pid
+
+.PHONY: dev-frontend
+dev-frontend:										## Start the Vite frontend dev server on port 5173
+	@echo "=> Starting frontend on port 5173"
+	pnpm dev & echo $$! > /tmp/docalchemy-vite.pid
+
+.PHONY: dev-stop
+dev-stop:											## Stop all dev services
+	@echo "=> Stopping all services"
+	@for pidfile in /tmp/docalchemy-*.pid; do \
+		pid=$$(cat "$$pidfile" 2>/dev/null); \
+		[ -n "$$pid" ] && kill -TERM -- -$$(ps -o pgid= -p $$pid | tr -d ' ') 2>/dev/null || true; \
+		rm -f "$$pidfile"; \
+	done
+	docker compose -p docalchemy -f docker-compose.infra.yml down
+	@echo "=> All services stopped"
+
+.PHONY: restart
+restart:												## Restart app services (backend, workers, frontend); keeps DB/Redis up
+	@echo "=> Restarting app services (backend, workers, frontend)"
+	@for pidfile in /tmp/docalchemy-backend.pid /tmp/docalchemy-docling-worker.pid /tmp/docalchemy-odl-worker.pid /tmp/docalchemy-mineru-worker.pid /tmp/docalchemy-surya-worker.pid /tmp/docalchemy-vite.pid; do \
+		pid=$$(cat "$$pidfile" 2>/dev/null); \
+		[ -n "$$pid" ] && kill -TERM -- -$$(ps -o pgid= -p $$pid | tr -d ' ') 2>/dev/null || true; \
+		rm -f "$$pidfile"; \
+	done
+	@$(MAKE) dev-infra
+	@echo "=> Waiting for infrastructure to be healthy..."
+	@until docker compose -p docalchemy -f docker-compose.infra.yml exec -T db pg_isready -U app 2>/dev/null; do sleep 1; done
+	@$(MAKE) dev-workers-rebuild dev-backend dev-frontend
+	@sleep 2
+	@echo "=> Restart complete"
+
+# =============================================================================
 # Tests, Linting, Coverage
 # =============================================================================
 .PHONY: lint

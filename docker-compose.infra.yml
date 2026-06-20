@@ -1,27 +1,22 @@
+name: docalchemy
+
 services:
   redis:
     image: valkey/valkey:latest
     ports:
       - "16377:6379"
-#    hostname: cache
     command: redis-server --appendonly yes
     volumes:
       - cache-data:/data
     environment:
       ALLOW_EMPTY_PASSWORD: "yes"
     restart: unless-stopped
-    logging:
-      options:
-        max-size: 10m
-        max-file: "3"
     healthcheck:
-      test:
-        - CMD
-        - redis-cli
-        - ping
+      test: ["CMD", "redis-cli", "ping"]
       interval: 1s
       timeout: 3s
       retries: 30
+
   db:
     image: postgres:latest
     ports:
@@ -32,18 +27,10 @@ services:
       POSTGRES_USER: "app"
       POSTGRES_DB: "app"
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql
     restart: unless-stopped
-    logging:
-      options:
-        max-size: 10m
-        max-file: "3"
     healthcheck:
-      test:
-        - CMD
-        - pg_isready
-        - -U
-        - app
+      test: ["CMD", "pg_isready", "-U", "app"]
       interval: 2s
       timeout: 3s
       retries: 40
@@ -52,20 +39,84 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    environment:
-      - STORAGE_ROOT_PATH=/app/storage
-      - HF_HOME=/app/storage/huggingface
-      - HF_HUB_CACHE=/app/storage/huggingface/hub
-      - DATABASE_ECHO=true
-      - DATABASE_POOL_DISABLE=false
-      - DATABASE_POOL_MAX_OVERFLOW=5
-      - DATABASE_POOL_SIZE=5
-      - DATABASE_POOL_TIMEOUT=30
-      - DATABASE_URL=postgresql+asyncpg://app:app@db:5432/app
+      target: docling
+      args:
+        PIP_INDEX_URL: "${PIP_INDEX_URL:-}"
+    environment: &worker-env
+      STORAGE_ROOT_PATH: /app/storage
+      DATABASE_URL: postgresql+asyncpg://app:app@db:5432/app
+      REDIS_URL: redis://redis:6379/0
+      HF_HOME: /app/cache/huggingface
+      HF_HUB_CACHE: /app/cache/huggingface/hub
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
     volumes:
       - ./storage:/app/storage
+      - ./cache:/app/cache
+
+  opendataloader:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: opendataloader
+      args:
+        PIP_INDEX_URL: "${PIP_INDEX_URL:-}"
+    environment:
+      <<: *worker-env
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    volumes:
+      - ./storage:/app/storage
+      - ./cache:/app/cache
+
+  mineru:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: mineru
+      args:
+        PIP_INDEX_URL: "${PIP_INDEX_URL:-}"
+        HTTP_PROXY: "${HTTP_PROXY:-}"
+        HTTPS_PROXY: "${HTTPS_PROXY:-}"
+    environment:
+      <<: *worker-env
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    volumes:
+      - ./storage:/app/storage
+      - ./cache:/app/cache
+
+  surya:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: surya
+      args:
+        PIP_INDEX_URL: "${PIP_INDEX_URL:-}"
+    environment:
+      <<: *worker-env
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    volumes:
+      - ./storage:/app/storage
+      - ./cache:/app/cache
+
 volumes:
-  db-data: {}
-  cache-data: {}
+  db-data:
+    name: docalchemy-db-data
+  cache-data:
+    name: docalchemy-cache-data

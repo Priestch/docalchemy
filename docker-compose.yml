@@ -12,12 +12,13 @@ services:
       dockerfile: Dockerfile
     environment:
       - STORAGE_ROOT_PATH=/app/storage
-      - HF_HOME=/app/storage/huggingface
-      - HF_HUB_CACHE=/app/storage/huggingface/hub
+      - HF_HOME=/app/cache/huggingface
+      - HF_HUB_CACHE=/app/cache/huggingface/hub
     depends_on:
       - redis
     volumes:
       - ./storage:/app/storage
+      - ./cache:/app/cache
 
 #  nginx:
 #    image: nginx:latest

@@ -1,5 +1,5 @@
 [project]
-dependencies = ["python-dotenv>=1.0.0", "litestar-vite[nodeenv]>=0.1.21", "celery[redis]>=5.4.0", "litestar[standard]>=2.13.0", "advanced-alchemy[uuid]>=0.26.2", "docling>=2.14.0", "opendataloader-pdf", "PyPDF2", "pydantic>=2.0.0"]
+dependencies = ["python-dotenv>=1.0.0", "litestar-vite[nodeenv]>=0.1.21", "celery[redis]>=5.4.0", "litestar[standard]>=2.13.0", "advanced-alchemy[uuid]>=0.26.2,<1.0.0", "PyPDF2", "pydantic>=2.0.0", "asyncpg", "palitra>=0.1.0"]
 name = "docalchemy"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -10,7 +10,11 @@ app = "app.__main__:run_cli"
 
 [project.optional-dependencies]
 dev = ["nodeenv"]
+docling = ["docling>=2.14.0"]
 linting = ["pre-commit>=3.4.0", "mypy>=1.5.1", "ruff>=0.0.287", "slotscheck", "types-click", "types-passlib", "types-python-jose", "types-pyyaml", "types-redis", "asyncpg-stubs", "pylint"]
+mineru = ["mineru[core]>=3.2.1"]
+opendataloader = ["opendataloader-pdf"]
+surya = ["surya-ocr>=0.17,<0.20", "PyMuPDF", "Pillow", "requests"]
 test = ["pytest", "pytest-xdist", "pytest-mock", "pytest-cov", "coverage", "pytest-sugar", "pytest-databases[postgres,redis]>=0.1.0"]
 
 [build-system]
