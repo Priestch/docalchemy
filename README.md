@@ -10,7 +10,7 @@ team building an ingestion pipeline, a researcher comparing extraction quality �
 is forced to work across a landscape of providers that **do not speak the same
 language**.
 
-Each engine (Docling, OpenDataLoader, and many others) ships its own output
+Each engine (Docling, MinerU, Surya, and many others) ships its own output
 format, its own coordinate system, its own notion of a "block," a "table," a
 "reading order." Evaluating even a single provider means staring at raw JSON,
 writing throwaway scripts, and eyeballing screenshots. Comparing two providers
@@ -18,22 +18,42 @@ on the same file means doing all of that twice and holding the results in your
 head. The real question — *which engine actually understands this document?* —
 never gets a clean answer.
 
-### Benchmarks lie
+### Even rigorous benchmarks can't answer it
 
-So how do people decide today? They read benchmark reports. And benchmarks lie.
+Public benchmarks have gotten serious.
+[OmniDocBench](https://github.com/opendatalab/OmniDocBench) (CVPR 2025)
+evaluates five parsing tasks — text OCR, table structure, formula recovery,
+layout detection, reading order — across ~1,650 real-world PDFs spanning ten
+document types, with expert human annotations and attribute-level breakdowns by
+language, scan quality, and layout complexity. It is genuinely well-designed,
+peer-reviewed, and better than anything that came before it.
 
-Not always deliberately, but reliably. Vendor benchmarks are run on curated
-datasets chosen to flatter the seller, in tuned configurations you'll never
-reproduce, against tasks that may have nothing to do with yours. A table that
-scores 98% on the benchmark merges two columns on page 4 of *your* invoice. An
-engine that "leads the field" drops the reading order on the document layout
-your team actually ships. Aggregate accuracy over a dataset you don't have is a
-marketing number, not a decision. By the time it has been averaged, weighted,
-and put on a leaderboard, it no longer describes any single real document —
-including yours.
+It still can't answer your question, for four reasons:
 
-The only benchmark that matters is the one run on the document in front of you,
-seen with your own eyes. DocAlchemy exists to make that benchmark possible.
+**Your document isn't in it.** The benchmark dataset is fixed. Your contracts,
+invoices, research reports, internal filings — none of them are there. An
+aggregate score over ~1,650 curated pages tells you nothing specific about the
+one document sitting in your pipeline today.
+
+**Aggregate scores hide where things break.** Table TEDS = 0.78 across a
+dataset could mean all tables are medium quality, or it could mean simple tables
+score 0.95 while complex multi-column tables score 0.30. The failures that
+matter most to you are exactly the ones that get averaged away.
+
+**The metrics don't map to usefulness.** Normalized edit distance and tree edit
+distance measure character-level and structural similarity to a ground-truth
+annotation. They don't measure whether the extracted markdown is coherent enough
+for an LLM to reason over, or whether the extracted table can be imported into a
+database without manual cleanup. The gap between "scores well on NED" and "works
+in my pipeline" can be large.
+
+**Numbers don't show you the mistake.** A benchmark tells you a table extraction
+scored 0.82. It doesn't tell you the engine collapsed columns 3 and 4. You can
+see that in one glance when the extracted table is drawn over the original page.
+
+OmniDocBench answers: *which engine is better on a curated academic distribution
+of documents?* DocAlchemy answers: *which engine is better on this specific
+document, and can I see why?*
 
 ### What replaces the leaderboard
 
@@ -61,7 +81,8 @@ own eyes as the judge.
 - **Ingest once.** Upload a single source document; it is stored as the
   immutable visual baseline for every analysis.
 - **Run many engines.** Dispatch the same source through multiple analysis
-  providers (Docling and OpenDataLoader today; more behind a stable contract).
+  providers — Docling, MinerU, Surya, OpenDataLoader, and FrankenOCR today;
+  more behind a stable contract.
 - **Normalize to one schema.** Each provider's native output is converted into
   an app-owned `RenderDocument` schema — one coordinate system, one block model,
   one way to render. The frontend never sees provider-native JSON.
