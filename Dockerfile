@@ -78,6 +78,8 @@ RUN --mount=type=cache,id=pip,target=/root/.cache/pip,sharing=shared \
 # so pull the prebuilt release and point surya at it via LLAMA_CPP_BINARY.
 # The .so libs ship alongside the binary, hence LD_LIBRARY_PATH.
 ARG LLAMA_CPP_TAG=b9754
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
 RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends \
         curl ca-certificates libgomp1 \
     && rm -rf /var/lib/apt/lists/* \
