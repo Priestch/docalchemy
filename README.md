@@ -96,6 +96,71 @@ own eyes as the judge.
 - **Track every run.** Provider name, version, config, latency, and raw
   artifacts are recorded for every analysis, so results are reproducible.
 
+## Getting started
+
+### Prerequisites
+
+| Tool | Purpose |
+|------|---------|
+| Docker & Docker Compose | Provider worker containers and infrastructure (PostgreSQL, Redis) |
+| Python ≥ 3.11 + [PDM](https://pdm.fming.dev) | Backend dependencies |
+| Node.js + [pnpm](https://pnpm.io) | Frontend dependencies |
+
+### Setup
+
+```bash
+# 1. Clone and enter the repo
+git clone https://github.com/Priestch/docalchemy.git
+cd docalchemy
+
+# 2. Copy and edit environment config
+cp .env.example .env
+
+# 3. Install Python and Node dependencies
+make install
+
+# 4. Apply database migrations
+make migrate
+
+# 5. Start everything
+make dev
+```
+
+`make dev` starts PostgreSQL and Redis in Docker, rebuilds and starts each
+provider worker container, then launches the Litestar backend and Vite dev
+server.
+
+```
+Backend:   http://localhost:8000
+Frontend:  http://localhost:5173
+```
+
+Stop all services: `make dev-stop`
+
+### Provider workers
+
+Each analysis engine runs in its own Docker container. On first run, containers
+download and cache their model weights under `./cache/` — this can be several
+gigabytes per provider and takes a while. Subsequent starts reuse the cache.
+
+```bash
+make dev-workers          # start workers without rebuilding images
+make dev-workers-rebuild  # rebuild images then start workers
+```
+
+### Useful make targets
+
+| Target | Description |
+|--------|-------------|
+| `make dev` | Start everything |
+| `make dev-stop` | Stop everything |
+| `make dev-infra` | Start only PostgreSQL and Redis |
+| `make dev-backend` | Start only the backend |
+| `make dev-frontend` | Start only the frontend dev server |
+| `make migrate` | Apply database migrations |
+| `make test` | Run tests |
+| `make lint` | Run linters |
+
 ## How it's organized
 
 DocAlchemy is a pragmatically-DDD Python backend (Litestar) plus a React/Vite

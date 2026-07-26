@@ -33,6 +33,69 @@ DocAlchemy 回答的是：*哪个引擎在这份具体文档上更好，我能�
 
 简言之：文档分析行业没有一块中立的地方，能让人看清楚各个引擎实际做了什么——只有把真相抹平的排行榜。DocAlchemy 建立这块地方：一个稳定的渲染契约，每个提供商隔离且可替换，源文档始终居于中心，你的眼睛是最终裁判。
 
+## 快速开始
+
+### 前置依赖
+
+| 工具 | 用途 |
+|------|------|
+| Docker & Docker Compose | 提供商 worker 容器及基础设施（PostgreSQL、Redis） |
+| Python ≥ 3.11 + [PDM](https://pdm.fming.dev) | 后端依赖管理 |
+| Node.js + [pnpm](https://pnpm.io) | 前端依赖管理 |
+
+### 启动
+
+```bash
+# 1. 克隆并进入仓库
+git clone https://github.com/Priestch/docalchemy.git
+cd docalchemy
+
+# 2. 复制并编辑环境配置
+cp .env.example .env
+
+# 3. 安装 Python 和 Node 依赖
+make install
+
+# 4. 执行数据库迁移
+make migrate
+
+# 5. 启动所有服务
+make dev
+```
+
+`make dev` 会在 Docker 中启动 PostgreSQL 和 Redis，重新构建并启动每个提供商
+worker 容器，然后拉起 Litestar 后端和 Vite 开发服务器。
+
+```
+后端：  http://localhost:8000
+前端：  http://localhost:5173
+```
+
+停止所有服务：`make dev-stop`
+
+### 提供商 Worker
+
+每个分析引擎在独立的 Docker 容器中运行。首次启动时，容器会下载并缓存模型权重到
+`./cache/` 目录下——每个提供商可能需要几 GB 空间，耗时较长。后续启动会复用缓存。
+
+```bash
+make dev-workers          # 不重新构建镜像，直接启动 worker
+make dev-workers-rebuild  # 重新构建镜像后启动 worker
+```
+
+### 常用命令
+
+| 命令 | 说明 |
+|------|------|
+| `make dev` | 启动所有服务 |
+| `make dev-stop` | 停止所有服务 |
+| `make dev-infra` | 仅启动 PostgreSQL 和 Redis |
+| `make dev-backend` | 仅启动后端 |
+| `make dev-frontend` | 仅启动前端开发服务器 |
+| `make migrate` | 执行数据库迁移 |
+| `make test` | 运行测试 |
+| `make lint` | 运行代码检查 |
+
 ## 它做什么
 
 - **一次摄取。** 上传单份源文档；它作为每次分析的不可变视觉基准被存储。
