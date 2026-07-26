@@ -1,5 +1,7 @@
 # DocAlchemy
 
+[中文](README.zh.md)
+
 > One document in. Every analysis engine's understanding of it, normalized and inspectable in one place.
 
 ## Why does this exist?
