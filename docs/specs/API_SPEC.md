@@ -192,7 +192,7 @@ List available providers and their capabilities.
   },
   {
     "provider_id": "opendataloader",
-    "display_name": "OpenDataLoader PDF",
+    "display_name": "OpenDataLoader",
     "version": "2.x",
     "capabilities": {
       "has_ocr": true,

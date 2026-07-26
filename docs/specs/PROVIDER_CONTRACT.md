@@ -158,7 +158,7 @@ class ProviderDefinition:
 | OCR | No (local mode) |
 | Timeout | 300s |
 
-### OpenDataLoader PDF
+### OpenDataLoader
 
 | Property | Value |
 |----------|-------|

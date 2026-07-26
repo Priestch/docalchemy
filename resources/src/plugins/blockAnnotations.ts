@@ -56,18 +56,35 @@ interface PageAnnotationsResponse {
 }
 
 // --- Semantic color palette ---
-// Grouped into families rather than a rainbow per type
+// One color per family so a provider's layout segmentation is visible at a
+// glance: body text vs headings vs tables vs captions vs code. Each family has
+// a faint fill, a stronger hover fill, and a solid border/text.
 
+// Fallback border for table-cell overlays that don't carry their own color.
 const RED = "#ef4444";
-const RED_BG = "rgba(239,68,68,0.06)";
-const RED_HOVER = "rgba(239,68,68,0.12)";
+
+const SLATE = "#475569";
+const SLATE_BG = "rgba(71,85,105,0.07)";
+const SLATE_HOVER = "rgba(71,85,105,0.14)";
+const INDIGO = "#4f46e5";
+const INDIGO_BG = "rgba(79,70,229,0.07)";
+const INDIGO_HOVER = "rgba(79,70,229,0.14)";
+const TEAL = "#0d9488";
+const TEAL_BG = "rgba(13,148,136,0.07)";
+const TEAL_HOVER = "rgba(13,148,136,0.14)";
+const AMBER = "#b45309";
+const AMBER_BG = "rgba(180,83,9,0.07)";
+const AMBER_HOVER = "rgba(180,83,9,0.14)";
+const VIOLET = "#6d28d9";
+const VIOLET_BG = "rgba(109,40,217,0.07)";
+const VIOLET_HOVER = "rgba(109,40,217,0.14)";
 
 const C = {
-  neutral:    { bg: RED_BG, hoverBg: RED_HOVER, border: RED, text: RED },
-  heading:    { bg: RED_BG, hoverBg: RED_HOVER, border: RED, text: RED },
-  data:       { bg: RED_BG, hoverBg: RED_HOVER, border: RED, text: RED },
-  accent:     { bg: RED_BG, hoverBg: RED_HOVER, border: RED, text: RED },
-  code:       { bg: RED_BG, hoverBg: RED_HOVER, border: RED, text: RED },
+  neutral: { bg: SLATE_BG,  hoverBg: SLATE_HOVER,  border: SLATE,  text: SLATE },   // paragraph / list / header / footer
+  heading: { bg: INDIGO_BG, hoverBg: INDIGO_HOVER, border: INDIGO, text: INDIGO },
+  data:    { bg: TEAL_BG,   hoverBg: TEAL_HOVER,   border: TEAL,   text: TEAL },    // table / figure / key-value
+  accent:  { bg: AMBER_BG,  hoverBg: AMBER_HOVER,  border: AMBER,  text: AMBER },   // caption / formula / footnote
+  code:    { bg: VIOLET_BG, hoverBg: VIOLET_HOVER, border: VIOLET, text: VIOLET },
 };
 
 // --- Default Styles ---
@@ -207,7 +224,7 @@ class BlockAnnotationElement extends AnnotationElement {
     // Tables show a solid outline by default; on hover the solid border is
     // removed and the marching-ants cell grid takes over (for grid tables).
     // Non-table blocks keep a solid border.
-    overlay.style.border = isTable ? `1px solid ${style.borderColor}` : `2px solid ${style.borderColor}`;
+    overlay.style.border = isTable ? `1px solid ${style.borderColor}` : `1.5px solid ${style.borderColor}`;
     overlay.style.borderRadius = "4px";
     overlay.style.boxSizing = "border-box";
     // The overlay should not cover the table cells visually when

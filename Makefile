@@ -143,13 +143,13 @@ dev-infra:											## Start PostgreSQL & Redis
 
 .PHONY: dev-workers
 dev-workers:										## Start all Celery workers in Docker (no rebuild)
-	@echo "=> Starting workers (docling, mineru, opendataloader, surya)"
-	@docker compose -p docalchemy -f docker-compose.infra.yml up -d docling mineru opendataloader surya
+	@echo "=> Starting workers (docling, mineru, opendataloader, surya, franken_ocr)"
+	@docker compose -p docalchemy -f docker-compose.infra.yml up -d docling mineru opendataloader surya franken_ocr
 
 .PHONY: dev-workers-rebuild
 dev-workers-rebuild:								## Rebuild & start all Celery workers
-	@echo "=> Rebuilding & starting workers (docling, mineru, opendataloader, surya)"
-	@docker compose -p docalchemy -f docker-compose.infra.yml up -d --build docling mineru opendataloader surya
+	@echo "=> Rebuilding & starting workers (docling, mineru, opendataloader, surya, franken_ocr)"
+	@docker compose -p docalchemy -f docker-compose.infra.yml up -d --build docling mineru opendataloader surya franken_ocr
 
 .PHONY: dev-backend
 dev-backend:										## Start the Litestar backend on port 8000

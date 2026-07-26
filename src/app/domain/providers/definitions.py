@@ -20,7 +20,7 @@ DOCLING_DEFINITION = ProviderDefinition(
 
 OPENDATALOADER_DEFINITION = ProviderDefinition(
     provider_id="opendataloader",
-    display_name="OpenDataLoader PDF",
+    display_name="OpenDataLoader",
     version="2.x",
     capabilities=ProviderCapabilities(
         has_ocr=True,
@@ -65,7 +65,7 @@ MINERU_DEFINITION = ProviderDefinition(
 
 SURYA_DEFINITION = ProviderDefinition(
     provider_id="surya",
-    display_name="Surya OCR",
+    display_name="Surya",
     version="0.x",
     capabilities=ProviderCapabilities(
         has_ocr=True,
@@ -87,4 +87,29 @@ SURYA_DEFINITION = ProviderDefinition(
     },
     queue_name="analysis.surya",
     timeout_seconds=600,
+)
+
+FRANKENOCR_DEFINITION = ProviderDefinition(
+    provider_id="franken_ocr",
+    display_name="Franken-OCR",
+    version="0.3",
+    capabilities=ProviderCapabilities(
+        has_ocr=True,
+        has_table_extraction=True,
+        has_reading_order=True,
+        has_formula=True,
+        has_image_description=False,
+    ),
+    supported_mime_types=["application/pdf"],
+    config_schema={
+        "type": "object",
+        "properties": {
+            "dpi": {"type": "integer", "default": 150},
+        },
+    },
+    queue_name="analysis.franken_ocr",
+    # ~50s/page on CPU plus a one-shot ~6.2 GB model load; give it headroom.
+    timeout_seconds=1800,
+    # CPU VLM OCR is ~50 s/page, so large documents take hours. Warn past this.
+    max_pages=30,
 )

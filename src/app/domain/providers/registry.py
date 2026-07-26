@@ -15,6 +15,10 @@ class ProviderDefinition:
     config_schema: dict = field(default_factory=dict)
     queue_name: str = ""
     timeout_seconds: int = 300
+    # Recommended page limit for a single run on this provider. None means no
+    # limit (the provider scales fine). Used to warn the user before triggering
+    # a run on a large document that would take a very long time.
+    max_pages: int | None = None
 
 
 class ProviderRegistry:
@@ -40,6 +44,7 @@ class ProviderRegistry:
 def create_default_registry() -> ProviderRegistry:
     from app.domain.providers.definitions import (
         DOCLING_DEFINITION,
+        FRANKENOCR_DEFINITION,
         MINERU_DEFINITION,
         OPENDATALOADER_DEFINITION,
         SURYA_DEFINITION,
@@ -50,4 +55,5 @@ def create_default_registry() -> ProviderRegistry:
     registry.register(OPENDATALOADER_DEFINITION)
     registry.register(MINERU_DEFINITION)
     registry.register(SURYA_DEFINITION)
+    registry.register(FRANKENOCR_DEFINITION)
     return registry

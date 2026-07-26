@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.documents.entities import PageDimensions, SourceDocument
 from app.domain.documents.repositories import AbstractSourceDocumentRepository
+from app.infrastructure.orm.analysis_run import AnalysisRunORM
 from app.infrastructure.orm.source_document import SourceDocumentORM
 
 
@@ -47,6 +48,20 @@ def _to_orm(entity: SourceDocument, orm: SourceDocumentORM | None = None) -> Sou
     return orm
 
 
+def _apply_filters(stmt, q: str | None, provider: str | None):
+    """Apply the shared name/provider filters so list() and count() stay in
+    sync (pagination math depends on the filtered total matching the page)."""
+    if q:
+        stmt = stmt.where(SourceDocumentORM.name.ilike(f"%{q}%"))
+    if provider:
+        # Only documents that have at least one analysis run for this provider.
+        subq = select(AnalysisRunORM.source_document_id).where(
+            AnalysisRunORM.provider_id == provider
+        )
+        stmt = stmt.where(SourceDocumentORM.id.in_(subq))
+    return stmt
+
+
 class SqlAlchemySourceDocumentRepository(AbstractSourceDocumentRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
@@ -63,13 +78,20 @@ class SqlAlchemySourceDocumentRepository(AbstractSourceDocumentRepository):
         await self._session.flush()
         return _to_entity(orm)
 
-    async def list(self, offset: int = 0, limit: int = 50) -> list[SourceDocument]:
-        stmt = select(SourceDocumentORM).order_by(SourceDocumentORM.created_at.desc()).offset(offset).limit(limit)
+    async def list(
+        self,
+        offset: int = 0,
+        limit: int = 50,
+        q: str | None = None,
+        provider: str | None = None,
+    ) -> list[SourceDocument]:
+        stmt = _apply_filters(select(SourceDocumentORM), q, provider)
+        stmt = stmt.order_by(SourceDocumentORM.created_at.desc()).offset(offset).limit(limit)
         result = await self._session.execute(stmt)
         return [_to_entity(row) for row in result.scalars().all()]
 
-    async def count(self) -> int:
-        stmt = select(func.count()).select_from(SourceDocumentORM)
+    async def count(self, q: str | None = None, provider: str | None = None) -> int:
+        stmt = _apply_filters(select(func.count()).select_from(SourceDocumentORM), q, provider)
         result = await self._session.execute(stmt)
         return result.scalar_one()
 

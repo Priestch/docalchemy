@@ -26,6 +26,7 @@ class ProviderController(Controller):
                     "has_image_description": d.capabilities.has_image_description,
                 },
                 "supported_mime_types": d.supported_mime_types,
+                "max_pages": d.max_pages,
             }
             for d in provider_registry.list_all()
         ]

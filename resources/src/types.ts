@@ -110,4 +110,5 @@ export interface ProviderDefinition {
     has_image_description: boolean;
   };
   supported_mime_types: string[];
+  max_pages: number | null;
 }

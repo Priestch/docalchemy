@@ -42,6 +42,10 @@ services:
       target: docling
       args:
         PIP_INDEX_URL: "${PIP_INDEX_URL:-}"
+    # Cap concurrency: docling's layout stage is CPU-heavy; running many huge
+    # docs at once oversubscribes cores and risks OOM. 2 at a time keeps each
+    # run fast and memory-bounded. Drop the override to use the CPU-count default.
+    command: ["celery", "-A", "app.infrastructure.workers.celery_app:celery_app", "worker", "-Q", "analysis.docling", "-c", "2", "--loglevel=debug"]
     environment: &worker-env
       STORAGE_ROOT_PATH: /app/storage
       DATABASE_URL: postgresql+asyncpg://app:app@db:5432/app
@@ -102,6 +106,24 @@ services:
       context: .
       dockerfile: Dockerfile
       target: surya
+      args:
+        PIP_INDEX_URL: "${PIP_INDEX_URL:-}"
+    environment:
+      <<: *worker-env
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    volumes:
+      - ./storage:/app/storage
+      - ./cache:/app/cache
+
+  franken_ocr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: franken_ocr
       args:
         PIP_INDEX_URL: "${PIP_INDEX_URL:-}"
     environment:

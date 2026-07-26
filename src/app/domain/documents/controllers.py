@@ -51,10 +51,12 @@ class DocumentController(Controller):
         analysis_uow: SqlAlchemyAnalysisUnitOfWork,
         offset: int = 0,
         limit: int = 50,
+        q: str | None = None,
+        provider: str | None = None,
     ) -> SourceDocumentListDTO:
         async with documents_uow:
-            docs = await documents_uow.documents.list(offset=offset, limit=limit)
-            total = await documents_uow.documents.count()
+            docs = await documents_uow.documents.list(offset=offset, limit=limit, q=q, provider=provider)
+            total = await documents_uow.documents.count(q=q, provider=provider)
 
         doc_ids = [d.id for d in docs]
         document_runs: list[DocumentRunsDTO] = []

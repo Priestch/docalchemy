@@ -10,11 +10,12 @@ app = "app.__main__:run_cli"
 
 [project.optional-dependencies]
 dev = ["nodeenv"]
-docling = ["docling>=2.14.0"]
+docling = ["docling>=2.14.0", "onnxruntime>=1.7"]
 linting = ["pre-commit>=3.4.0", "mypy>=1.5.1", "ruff>=0.0.287", "slotscheck", "types-click", "types-passlib", "types-python-jose", "types-pyyaml", "types-redis", "asyncpg-stubs", "pylint"]
 mineru = ["mineru[core]>=3.2.1"]
 opendataloader = ["opendataloader-pdf"]
-surya = ["surya-ocr>=0.17,<0.20", "PyMuPDF", "Pillow", "requests"]
+surya = ["surya-ocr>=0.20,<0.21", "PyMuPDF", "Pillow", "requests"]
+franken_ocr = ["pypdfium2", "Pillow"]
 test = ["pytest", "pytest-xdist", "pytest-mock", "pytest-cov", "coverage", "pytest-sugar", "pytest-databases[postgres,redis]>=0.1.0"]
 
 [build-system]

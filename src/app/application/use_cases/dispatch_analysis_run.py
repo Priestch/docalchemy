@@ -34,6 +34,7 @@ class DispatchAnalysisRun:
             "analysis.opendataloader": "run_analysis_opendataloader",
             "analysis.mineru": "run_analysis_mineru",
             "analysis.surya": "run_analysis_surya",
+            "analysis.franken_ocr": "run_analysis_franken_ocr",
         }
         task_name = task_map.get(queue, "run_analysis")
         celery_app.send_task(

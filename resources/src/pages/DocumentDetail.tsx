@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { apiClient } from '../apiClient';
+import { confirmLongRun } from '../lib/longRunWarning';
 import { SourceDocumentDTO, AnalysisRunDTO, ProviderDefinition } from '../types';
 import { ArrowLeft, Play, Download, Clock, AlertCircle, CheckCircle, Loader2, File, Info, History, X } from 'lucide-react';
 import { format } from 'date-fns';
@@ -84,6 +85,8 @@ export function DocumentDetail() {
   }, [runs, id]);
 
   const handleTriggerRun = async () => {
+    const provider = providers.find((p) => p.provider_id === selectedProvider);
+    if (!confirmLongRun(provider, doc?.page_count)) return;
     setTriggeringRun(true);
     try {
       await apiClient.post(`/documents/${id}/analysis-runs`, {

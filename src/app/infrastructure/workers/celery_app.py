@@ -20,6 +20,7 @@ import app.infrastructure.workers.docling_worker  # noqa: F401
 import app.infrastructure.workers.mineru_worker  # noqa: F401
 import app.infrastructure.workers.opendataloader_worker  # noqa: F401
 import app.infrastructure.workers.surya_worker  # noqa: F401
+import app.infrastructure.workers.franken_ocr_worker  # noqa: F401
 
 # Acknowledge tasks only after they finish. With Celery's default (early ack,
 # on receipt) a worker that is restarted or killed mid-task drops the task
@@ -91,6 +92,7 @@ def _requeue_orphaned_runs_on_boot(**_: object) -> None:
                 "analysis.opendataloader": "run_analysis_opendataloader",
                 "analysis.mineru": "run_analysis_mineru",
                 "analysis.surya": "run_analysis_surya",
+                "analysis.franken_ocr": "run_analysis_franken_ocr",
             }
             task_name = task_map.get(queue, "run_analysis")
             celery_app.send_task(task_name, args=[str(run_id), str(source_document_id), config], queue=queue)
