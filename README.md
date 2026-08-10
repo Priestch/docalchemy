@@ -96,6 +96,62 @@ own eyes as the judge.
 - **Track every run.** Provider name, version, config, latency, and raw
   artifacts are recorded for every analysis, so results are reproducible.
 
+## Demo
+
+A full walkthrough: dashboard → document list → enabling the Docling extraction
+overlay on a financial table → the Runs & Compare dialog → providers page.
+
+## Screenshots
+
+### Dashboard
+
+An at-a-glance view of documents ingested, analysis runs completed, and
+providers currently online.
+
+![Dashboard](docs/images/01-dashboard.png)
+
+### Document list
+
+Browse all uploaded source documents. Filter by provider, search by name,
+upload new PDFs, or trigger a new analysis run in one click.
+
+![Document list](docs/images/02-documents-list.png)
+
+### PDF viewer with extraction overlay
+
+The core inspection surface: the original PDF renders at full fidelity, and
+each provider's extracted blocks are drawn over it as a coloured overlay —
+text blocks, **table bounding boxes**, figures, and reading order. The
+screenshot below shows Docling's table extraction on a financial page, with
+green bounding boxes around each recognised table.
+
+Switch providers in the **SHOW EXTRACTION** dropdown to compare results on
+the same page without leaving the viewer.
+
+![PDF viewer — Docling table extraction overlay](docs/images/04-viewer-with-overlay.png)
+
+### Analysis runs & compare
+
+Track every run — provider, version, timestamp, latency, and status. Select
+two successful runs to diff their extraction results side-by-side.
+
+![Analysis runs dialog](docs/images/06-analysis-runs.png)
+
+### Side-by-side comparison
+
+Select any two runs and click **Compare** to open a split view — the same PDF
+page rendered simultaneously for each provider, with each provider's extracted
+blocks highlighted. Differences in table detection, heading classification, and
+reading order become immediately apparent without toggling between runs.
+
+![Side-by-side comparison view](docs/images/07-comparison.png)
+
+### Providers
+
+See which analysis engines are online and manage provider configuration.
+
+![Providers page](docs/images/05-providers.png)
+
 ## Getting started
 
 ### Prerequisites
