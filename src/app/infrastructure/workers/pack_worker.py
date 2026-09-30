@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import sys
+import traceback
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "src"))
 
@@ -97,9 +98,17 @@ def run_analysis(self, run_id: str, source_document_id: str, config: dict) -> No
 
     try:
         async_run(_run())
-    except Exception:
+    except Exception as exc:
         logger.exception("Analysis failed for run %s", run_id)
-        import traceback
+        # Format here, in the thread that holds exc_info — _mark_failed runs
+        # on palitra's loop thread, where format_exc() would see no exception.
+        # Keep the tail: the final frames carry the actual provider error.
+        error_message = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+        if len(error_message) > 2000:
+            error_message = "…" + error_message[-1999:]
+        # A provider JobFailed carries the engine's own error code — surface
+        # it instead of the generic PROVIDER_ERROR when present.
+        error_code = getattr(exc, "code", None) or getattr(exc, "error_code", None) or "PROVIDER_ERROR"
 
         async def _mark_failed() -> None:
             async with alchemy.get_session() as session:
@@ -109,8 +118,8 @@ def run_analysis(self, run_id: str, source_document_id: str, config: dict) -> No
                 use_case = MarkAnalysisRunFailed(uow=uow)
                 await use_case.execute(
                     run_id=run_id,
-                    error_code="PROVIDER_ERROR",
-                    error_message=traceback.format_exc()[:2000],
+                    error_code=str(error_code),
+                    error_message=error_message,
                 )
 
         try:
