@@ -11,6 +11,9 @@ export STORAGE_PROVIDER_ROOT="${STORAGE_PROVIDER_ROOT:-/storage}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 VENV_PYTHON="$PROJECT_ROOT/.venv/bin/python"
+CELERY="$PROJECT_ROOT/.venv/bin/celery"
+export PYTHONPATH="$PROJECT_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
+mkdir -p "$PROJECT_ROOT/logs"
 
 echo "Starting pack workers with storage mapping:"
 echo "  Host:      $STORAGE_HOST_ROOT"
@@ -32,7 +35,7 @@ for worker_spec in "${WORKERS[@]}"; do
     PACK_ID="$pack_id" \
     PROVIDER_URL="$provider_url" \
     PACK_QUEUE="$queue" \
-    celery -A app.infrastructure.workers.pack_worker worker \
+    "$CELERY" -A app.infrastructure.workers.pack_worker worker \
         --loglevel=info \
         --concurrency=1 \
         --hostname="${pack_id}@%h" \

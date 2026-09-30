@@ -1,6 +1,10 @@
 from app.domain.providers.contract import ProviderCapabilities
 from app.domain.providers.registry import ProviderDefinition
 
+# Every definition points at an externally running provider process (Docker
+# compose in the docalchemy repo, or a venv-launched provider). The endpoint
+# is informational here — the worker instance resolves its provider URL from
+# its own PROVIDER_URL environment variable.
 DOCLING_DEFINITION = ProviderDefinition(
     provider_id="docling",
     display_name="Docling",
@@ -66,32 +70,6 @@ MINERU_DEFINITION = ProviderDefinition(
     endpoint="http://localhost:8082",
 )
 
-SURYA_DEFINITION = ProviderDefinition(
-    provider_id="surya",
-    display_name="Surya",
-    version="0.x",
-    capabilities=ProviderCapabilities(
-        has_ocr=True,
-        has_table_extraction=True,
-        has_reading_order=True,
-        has_formula=True,
-        has_image_description=False,
-    ),
-    supported_mime_types=["application/pdf"],
-    config_schema={
-        "type": "object",
-        "properties": {
-            "langs": {
-                "type": "array",
-                "items": {"type": "string"},
-                "default": ["en"],
-            },
-        },
-    },
-    queue_name="analysis.surya",
-    timeout_seconds=600,
-)
-
 FRANKENOCR_DEFINITION = ProviderDefinition(
     provider_id="franken_ocr",
     display_name="Franken-OCR",
@@ -117,39 +95,3 @@ FRANKENOCR_DEFINITION = ProviderDefinition(
     max_pages=30,
     endpoint="http://localhost:8084",
 )
-
-DOCLING_PACK_DEFINITION = ProviderDefinition(
-    provider_id="docling-pack",
-    display_name="Docling (pack)",
-    version="0.1.0",
-    capabilities=ProviderCapabilities(
-        has_ocr=True,
-        has_table_extraction=True,
-        has_reading_order=True,
-        has_formula=False,
-        has_image_description=False,
-    ),
-    supported_mime_types=["application/pdf"],
-    config_schema={},
-    queue_name="analysis.docling-pack",
-    timeout_seconds=300,
-)
-
-DOCLING_DOCKER_PACK_DEFINITION = ProviderDefinition(
-    provider_id="docling-docker-pack",
-    display_name="Docling (docker pack)",
-    version="0.1.0",
-    capabilities=ProviderCapabilities(
-        has_ocr=True,
-        has_table_extraction=True,
-        has_reading_order=True,
-        has_formula=False,
-        has_image_description=False,
-    ),
-    supported_mime_types=["application/pdf"],
-    config_schema={},
-    queue_name="analysis.docling-docker-pack",
-    timeout_seconds=300,
-)
-# (name kept short: the provider_id is what appears in API responses)
-DOCLING_DOCKER_PACK_DEFINITION.provider_id = "docling-docker-pack"

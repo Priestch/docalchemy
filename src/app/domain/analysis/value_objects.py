@@ -20,3 +20,7 @@ class ArtifactType(StrEnum):
     # A provider pack's own normalized output — the mapper's input, stored so
     # re-normalization never needs the engine again.
     NORMALIZED = "normalized"
+    FIGURE = "figure"
+    # Fallback for kinds this app doesn't model yet; providers may add kinds
+    # independently, and an unknown kind must not fail the whole run.
+    OTHER = "other"

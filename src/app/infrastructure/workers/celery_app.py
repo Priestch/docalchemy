@@ -13,14 +13,10 @@ redis_url = os.getenv("REDIS_URL", "redis://localhost:16377/0")
 
 celery_app = Celery("docalchemy")
 
-# Register all task modules so the worker can dispatch any task name.
-# Each container listens only to its own queue but must know about all
-# tasks to handle the orphan-requeue janitor and late-ack redelivery.
-import app.infrastructure.workers.docling_worker  # noqa: F401
-import app.infrastructure.workers.mineru_worker  # noqa: F401
-import app.infrastructure.workers.opendataloader_worker  # noqa: F401
-import app.infrastructure.workers.surya_worker  # noqa: F401
-import app.infrastructure.workers.franken_ocr_worker  # noqa: F401
+# Register the task modules so the worker can dispatch any task name.
+# The generic pack worker serves every provider queue; the provider URL is
+# given per worker instance via PACK_ID / PROVIDER_URL environment variables.
+import app.infrastructure.workers.pack_worker  # noqa: F401
 
 # Acknowledge tasks only after they finish. With Celery's default (early ack,
 # on receipt) a worker that is restarted or killed mid-task drops the task
@@ -87,14 +83,7 @@ def _requeue_orphaned_runs_on_boot(**_: object) -> None:
         registry = create_default_registry()
 
         def _send(run_id, source_document_id, config, queue):
-            task_map = {
-                "analysis.docling": "run_analysis",
-                "analysis.opendataloader": "run_analysis_opendataloader",
-                "analysis.mineru": "run_analysis_mineru",
-                "analysis.surya": "run_analysis_surya",
-                "analysis.franken_ocr": "run_analysis_franken_ocr",
-            }
-            task_name = task_map.get(queue, "run_analysis")
+            task_name = f"run_analysis.pack.{queue.removeprefix('analysis.')}"
             celery_app.send_task(task_name, args=[str(run_id), str(source_document_id), config], queue=queue)
 
         async def _drain() -> list[str]:

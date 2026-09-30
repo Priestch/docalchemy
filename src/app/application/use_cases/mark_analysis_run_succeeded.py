@@ -37,10 +37,14 @@ class MarkAnalysisRunSucceeded:
             run.runtime_metadata = runtime_metadata or {}
 
             for artifact in raw_artifacts:
+                try:
+                    artifact_type = ArtifactType(artifact.artifact_type)
+                except ValueError:
+                    artifact_type = ArtifactType.OTHER
                 entity = AnalysisArtifact(
                     id=uuid4(),
                     analysis_run_id=run_id,
-                    artifact_type=ArtifactType(artifact.artifact_type),
+                    artifact_type=artifact_type,
                     format=artifact.format,
                     storage_key=artifact.storage_key,
                     created_at=now,

@@ -29,13 +29,9 @@ class DispatchAnalysisRun:
     def _dispatch_task(self, run_id: UUID, source_document_id: UUID, config: dict, queue: str) -> None:
         from app.infrastructure.workers.celery_app import celery_app
 
-        task_map = {
-            "analysis.docling": "run_analysis.pack.docling",
-            "analysis.opendataloader": "run_analysis.pack.opendataloader",
-            "analysis.mineru": "run_analysis.pack.mineru",
-            "analysis.franken_ocr": "run_analysis.pack.franken_ocr",
-        }
-        task_name = task_map.get(queue, "run_analysis")
+        # Every provider queue runs the same generic pack task; the provider
+        # endpoint comes from the worker instance's environment.
+        task_name = f"run_analysis.pack.{queue.removeprefix('analysis.')}"
         celery_app.send_task(
             task_name,
             args=[str(run_id), str(source_document_id), config],

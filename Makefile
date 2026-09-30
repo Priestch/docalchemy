@@ -119,13 +119,18 @@ lock:                                             ## Rebuild lockfiles from scra
 # =============================================================================
 # Dev Server
 # =============================================================================
+# Shared host storage seen by the web app, the pack workers, and (via the
+# /storage mount) the provider containers in the docalchemy repo.
+STORAGE_HOST ?= /home/gaopeng/localstorage/docalchemy
+PACK_WORKERS  = docling:8081 mineru:8082 opendataloader:8083 franken_ocr:8084
+
 .PHONY: dev
-dev:												## Start all services (infra, workers, backend, frontend)
+dev:												## Start all services (infra, providers, workers, backend, frontend)
 	@echo "=> Starting all services"
-	@$(MAKE) dev-infra
+	@$(MAKE) dev-infra dev-providers
 	@echo "=> Waiting for infrastructure to be healthy..."
-	@until docker compose -p docalchemy -f docker-compose.infra.yml exec -T db pg_isready -U app 2>/dev/null; do sleep 1; done
-	@$(MAKE) dev-workers-rebuild dev-backend dev-frontend
+	@until docker compose -p docalchemy1 -f docker-compose.infra.yml exec -T db pg_isready -U app 2>/dev/null; do sleep 1; done
+	@$(MAKE) dev-workers dev-backend dev-frontend
 	@sleep 2
 	@echo ""
 	@echo "  Backend:    http://localhost:8000"
@@ -136,31 +141,59 @@ dev:												## Start all services (infra, workers, backend, frontend)
 .PHONY: dev-infra
 dev-infra:											## Start PostgreSQL & Redis
 	@echo "=> Starting PostgreSQL & Redis"
-	@docker compose -p docalchemy -f docker-compose.infra.yml up -d db redis 2>/dev/null || \
+	@mkdir -p $(STORAGE_HOST)
+	@docker compose -p docalchemy1 -f docker-compose.infra.yml up -d db redis 2>/dev/null || \
 		( echo "   Ports in use — stopping stale containers first..." && \
-		  docker compose -p docalchemy -f docker-compose.infra.yml down 2>/dev/null; \
-		  docker compose -p docalchemy -f docker-compose.infra.yml up -d db redis )
+		  docker compose -p docalchemy1 -f docker-compose.infra.yml down 2>/dev/null; \
+		  docker compose -p docalchemy1 -f docker-compose.infra.yml up -d db redis )
+
+.PHONY: dev-providers
+dev-providers:										## Start the provider containers (docalchemy repo)
+	@echo "=> Starting provider containers"
+	@cd ../docalchemy && STORAGE_PATH=$(STORAGE_HOST) docker compose up -d
 
 .PHONY: dev-workers
-dev-workers:										## Start all Celery workers in Docker (no rebuild)
-	@echo "=> Starting workers (docling, mineru, opendataloader, surya, franken_ocr)"
-	@docker compose -p docalchemy -f docker-compose.infra.yml up -d docling mineru opendataloader surya franken_ocr
+dev-workers:										## Start Celery pack workers (one per provider, on the host)
+	@echo "=> Starting pack workers (docling, mineru, opendataloader, franken_ocr)"
+	@mkdir -p logs
+	@for spec in $(PACK_WORKERS); do \
+		pack_id=$${spec%%:*}; port=$${spec##*:}; \
+		PACK_ID=$$pack_id \
+		PROVIDER_URL=http://localhost:$$port \
+		PACK_QUEUE=analysis.$$pack_id \
+		REDIS_URL=redis://localhost:16377/0 \
+		DATABASE_URL=postgresql+asyncpg://app:app@localhost:15433/app \
+		STORAGE_ROOT_PATH=$(STORAGE_HOST) \
+		STORAGE_HOST_ROOT=$(STORAGE_HOST) \
+		STORAGE_PROVIDER_ROOT=/storage \
+		PYTHONPATH=src \
+		nohup $(ENV_PREFIX)celery -A app.infrastructure.workers.pack_worker worker \
+			--queues=analysis.$$pack_id --loglevel=info --concurrency=1 --hostname="$$pack_id@%h" \
+			> logs/worker_$$pack_id.log 2>&1 & \
+		echo $$! > /tmp/docalchemy-worker-$$pack_id.pid; \
+		echo "   $$pack_id  (pid $$!, logs: logs/worker_$$pack_id.log)"; \
+	done
 
 .PHONY: dev-workers-rebuild
-dev-workers-rebuild:								## Rebuild & start all Celery workers
-	@echo "=> Rebuilding & starting workers (docling, mineru, opendataloader, surya, franken_ocr)"
-	@docker compose -p docalchemy -f docker-compose.infra.yml up -d --build docling mineru opendataloader surya franken_ocr
+dev-workers-rebuild: dev-workers					## Alias for dev-workers (pack workers need no image build)
 
 .PHONY: dev-backend
 dev-backend:										## Start the Litestar backend on port 8000
 	@echo "=> Starting backend on port 8000"
-	DATABASE_URL="postgresql+asyncpg://app:app@localhost:15433/app" \
-	PYTHONPATH=src LITESTAR_APP=app.asgi:app $(ENV_PREFIX)litestar run --host 0.0.0.0 --port 8000 & echo $$! > /tmp/docalchemy-backend.pid
+	@mkdir -p logs
+	@DATABASE_URL="postgresql+asyncpg://app:app@localhost:15433/app" \
+	STORAGE_ROOT_PATH=$(STORAGE_HOST) \
+	PYTHONPATH=src LITESTAR_APP=app.asgi:app \
+	nohup $(ENV_PREFIX)litestar run --host 0.0.0.0 --port 8000 \
+		> logs/backend.log 2>&1 & echo $$! > /tmp/docalchemy-backend.pid
+	@echo "   pid $$(cat /tmp/docalchemy-backend.pid), logs: logs/backend.log"
 
 .PHONY: dev-frontend
 dev-frontend:										## Start the Vite frontend dev server on port 5173
 	@echo "=> Starting frontend on port 5173"
-	pnpm dev & echo $$! > /tmp/docalchemy-vite.pid
+	@mkdir -p logs
+	@nohup pnpm dev > logs/frontend.log 2>&1 & echo $$! > /tmp/docalchemy-vite.pid
+	@echo "   pid $$(cat /tmp/docalchemy-vite.pid), logs: logs/frontend.log"
 
 .PHONY: dev-stop
 dev-stop:											## Stop all dev services
@@ -170,21 +203,22 @@ dev-stop:											## Stop all dev services
 		[ -n "$$pid" ] && kill -TERM -- -$$(ps -o pgid= -p $$pid | tr -d ' ') 2>/dev/null || true; \
 		rm -f "$$pidfile"; \
 	done
-	docker compose -p docalchemy -f docker-compose.infra.yml down
+	docker compose -p docalchemy1 -f docker-compose.infra.yml down
+	cd ../docalchemy && docker compose down
 	@echo "=> All services stopped"
 
 .PHONY: restart
 restart:												## Restart app services (backend, workers, frontend); keeps DB/Redis up
 	@echo "=> Restarting app services (backend, workers, frontend)"
-	@for pidfile in /tmp/docalchemy-backend.pid /tmp/docalchemy-docling-worker.pid /tmp/docalchemy-odl-worker.pid /tmp/docalchemy-mineru-worker.pid /tmp/docalchemy-surya-worker.pid /tmp/docalchemy-vite.pid; do \
+	@for pidfile in /tmp/docalchemy-backend.pid /tmp/docalchemy-vite.pid /tmp/docalchemy-worker-*.pid; do \
 		pid=$$(cat "$$pidfile" 2>/dev/null); \
 		[ -n "$$pid" ] && kill -TERM -- -$$(ps -o pgid= -p $$pid | tr -d ' ') 2>/dev/null || true; \
 		rm -f "$$pidfile"; \
 	done
 	@$(MAKE) dev-infra
 	@echo "=> Waiting for infrastructure to be healthy..."
-	@until docker compose -p docalchemy -f docker-compose.infra.yml exec -T db pg_isready -U app 2>/dev/null; do sleep 1; done
-	@$(MAKE) dev-workers-rebuild dev-backend dev-frontend
+	@until docker compose -p docalchemy1 -f docker-compose.infra.yml exec -T db pg_isready -U app 2>/dev/null; do sleep 1; done
+	@$(MAKE) dev-workers dev-backend dev-frontend
 	@sleep 2
 	@echo "=> Restart complete"
 
