@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "..
 from datetime import datetime, timezone
 from pathlib import Path
 
-from app.infrastructure.providers.pack.adapter import RemotePackAdapter
+from app.infrastructure.providers.pack.adapter import PackAdapter
 from app.infrastructure.providers.pack.normalizer import pack_raw_to_render_document
 from app.infrastructure.storage import StorageService
 from app.infrastructure.workers.celery_app import celery_app
@@ -42,7 +42,7 @@ def run_analysis(self, run_id: str, source_document_id: str, config: dict) -> No
     storage = StorageService(
         root_path=Path(os.getenv("STORAGE_ROOT_PATH", str(Path(__file__).parent.parent.parent.parent.parent / "storage")))
     )
-    adapter = RemotePackAdapter(storage=storage, provider_url=PROVIDER_URL, pack_id=PACK_ID)
+    adapter = PackAdapter(storage=storage, provider_url=PROVIDER_URL, pack_id=PACK_ID)
 
     async def _run() -> None:
         async with alchemy.get_session() as session:

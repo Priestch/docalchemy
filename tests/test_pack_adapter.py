@@ -21,7 +21,7 @@ from app.domain.providers.contract import ProviderInput  # noqa: E402
 from app.infrastructure.providers.docling.normalizer import (  # noqa: E402
     docling_raw_to_render_document,
 )
-from app.infrastructure.providers.pack.adapter import RemotePackAdapter  # noqa: E402
+from app.infrastructure.providers.pack.adapter import PackAdapter  # noqa: E402
 from app.infrastructure.providers.pack.normalizer import pack_raw_to_render_document  # noqa: E402
 from app.infrastructure.storage import StorageService  # noqa: E402
 
@@ -41,7 +41,7 @@ pytestmark = pytest.mark.skipif(not _provider_alive() or not CORPUS.exists(), re
 
 def test_pack_adapter_round_trip(tmp_path: Path) -> None:
     storage = StorageService(root_path=tmp_path / "storage")
-    adapter = RemotePackAdapter(storage=storage, provider_url=PROVIDER_URL, pack_id="docling-pack")
+    adapter = PackAdapter(storage=storage, provider_url=PROVIDER_URL, pack_id="docling-pack")
 
     assert adapter.provider_version  # read from the provider's manifest
     assert "application/pdf" in adapter.supported_mime_types

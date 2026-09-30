@@ -44,6 +44,7 @@ class ProviderRegistry:
 def create_default_registry() -> ProviderRegistry:
     from app.domain.providers.definitions import (
         DOCLING_DEFINITION,
+        DOCLING_DOCKER_PACK_DEFINITION,
         DOCLING_PACK_DEFINITION,
         FRANKENOCR_DEFINITION,
         MINERU_DEFINITION,
@@ -54,6 +55,7 @@ def create_default_registry() -> ProviderRegistry:
     registry = ProviderRegistry()
     registry.register(DOCLING_DEFINITION)
     registry.register(DOCLING_PACK_DEFINITION)
+    registry.register(DOCLING_DOCKER_PACK_DEFINITION)
     registry.register(OPENDATALOADER_DEFINITION)
     registry.register(MINERU_DEFINITION)
     registry.register(SURYA_DEFINITION)

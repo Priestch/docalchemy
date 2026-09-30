@@ -32,6 +32,7 @@ class DispatchAnalysisRun:
         task_map = {
             "analysis.docling": "run_analysis",
             "analysis.docling-pack": "run_analysis.pack.docling-pack",
+            "analysis.docling-docker-pack": "run_analysis.pack.docling-docker-pack",
             "analysis.opendataloader": "run_analysis_opendataloader",
             "analysis.mineru": "run_analysis_mineru",
             "analysis.surya": "run_analysis_surya",

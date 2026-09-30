@@ -130,3 +130,22 @@ DOCLING_PACK_DEFINITION = ProviderDefinition(
     queue_name="analysis.docling-pack",
     timeout_seconds=300,
 )
+
+DOCLING_DOCKER_PACK_DEFINITION = ProviderDefinition(
+    provider_id="docling-docker-pack",
+    display_name="Docling (docker pack)",
+    version="0.1.0",
+    capabilities=ProviderCapabilities(
+        has_ocr=True,
+        has_table_extraction=True,
+        has_reading_order=True,
+        has_formula=False,
+        has_image_description=False,
+    ),
+    supported_mime_types=["application/pdf"],
+    config_schema={},
+    queue_name="analysis.docling-docker-pack",
+    timeout_seconds=300,
+)
+# (name kept short: the provider_id is what appears in API responses)
+DOCLING_DOCKER_PACK_DEFINITION.provider_id = "docling-docker-pack"
