@@ -17,3 +17,6 @@ class ArtifactType(StrEnum):
     RAW_MARKDOWN = "raw_markdown"
     RAW_HTML = "raw_html"
     RENDER_DOCUMENT = "render_document"
+    # A provider pack's own normalized output — the mapper's input, stored so
+    # re-normalization never needs the engine again.
+    NORMALIZED = "normalized"

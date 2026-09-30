@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService, is_dict, is_msgspec_model, is_pydantic_model
 from litestar.events import listener
 
-from app.celery_app import app
 from app.db.models import File
 from app.domain.file.repositories import FileRepository
 
@@ -28,7 +27,11 @@ class FileStatus(
 
 @listener("file_uploaded")
 async def analyse_file(file_meta: dict, analyser: str) -> None:
-    app.send_task("app.analyser.tasks.analyse_document", args=[file_meta, analyser])
+    # main carries this legacy module with a stale import target; the task
+    # dispatch is resolved lazily so the server can start without it.
+    from app.infrastructure.workers.celery_app import celery_app as _celery_app
+
+    _celery_app.send_task("app.analyser.tasks.analyse_document", args=[file_meta, analyser])
 
 
 @verify(UNIQUE)

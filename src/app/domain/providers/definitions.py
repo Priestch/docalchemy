@@ -113,3 +113,20 @@ FRANKENOCR_DEFINITION = ProviderDefinition(
     # CPU VLM OCR is ~50 s/page, so large documents take hours. Warn past this.
     max_pages=30,
 )
+
+DOCLING_PACK_DEFINITION = ProviderDefinition(
+    provider_id="docling-pack",
+    display_name="Docling (pack)",
+    version="0.1.0",
+    capabilities=ProviderCapabilities(
+        has_ocr=True,
+        has_table_extraction=True,
+        has_reading_order=True,
+        has_formula=False,
+        has_image_description=False,
+    ),
+    supported_mime_types=["application/pdf"],
+    config_schema={},
+    queue_name="analysis.docling-pack",
+    timeout_seconds=300,
+)
