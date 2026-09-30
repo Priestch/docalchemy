@@ -16,6 +16,7 @@ DOCLING_DEFINITION = ProviderDefinition(
     config_schema={},
     queue_name="analysis.docling",
     timeout_seconds=300,
+    endpoint="http://localhost:8081",
 )
 
 OPENDATALOADER_DEFINITION = ProviderDefinition(
@@ -38,6 +39,7 @@ OPENDATALOADER_DEFINITION = ProviderDefinition(
     },
     queue_name="analysis.opendataloader",
     timeout_seconds=600,
+    endpoint="http://localhost:8083",
 )
 
 MINERU_DEFINITION = ProviderDefinition(
@@ -61,6 +63,7 @@ MINERU_DEFINITION = ProviderDefinition(
     },
     queue_name="analysis.mineru",
     timeout_seconds=600,
+    endpoint="http://localhost:8082",
 )
 
 SURYA_DEFINITION = ProviderDefinition(
@@ -112,6 +115,7 @@ FRANKENOCR_DEFINITION = ProviderDefinition(
     timeout_seconds=1800,
     # CPU VLM OCR is ~50 s/page, so large documents take hours. Warn past this.
     max_pages=30,
+    endpoint="http://localhost:8084",
 )
 
 DOCLING_PACK_DEFINITION = ProviderDefinition(

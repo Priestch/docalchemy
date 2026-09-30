@@ -1,15 +1,9 @@
-from app.infrastructure.providers.docling import DoclingAdapter, docling_raw_to_render_document
-from app.infrastructure.providers.mineru import MinerUAdapter, mineru_raw_to_render_document
-from app.infrastructure.providers.opendataloader import OpenDataLoaderAdapter, opendataloader_raw_to_render_document
-from app.infrastructure.providers.surya import SuryaAdapter, surya_raw_to_render_document
+"""Provider infrastructure: PackAdapter for all external providers.
 
-__all__ = [
-    "DoclingAdapter",
-    "docling_raw_to_render_document",
-    "MinerUAdapter",
-    "mineru_raw_to_render_document",
-    "OpenDataLoaderAdapter",
-    "opendataloader_raw_to_render_document",
-    "SuryaAdapter",
-    "surya_raw_to_render_document",
-]
+All providers run as separate processes accessed via docalchemy.host.
+The old in-process adapters have been removed in favor of the pack architecture.
+"""
+
+from app.infrastructure.providers.pack import PackAdapter
+
+__all__ = ["PackAdapter"]

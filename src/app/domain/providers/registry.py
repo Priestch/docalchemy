@@ -19,6 +19,7 @@ class ProviderDefinition:
     # limit (the provider scales fine). Used to warn the user before triggering
     # a run on a large document that would take a very long time.
     max_pages: int | None = None
+    endpoint: str | None = None
 
 
 class ProviderRegistry:

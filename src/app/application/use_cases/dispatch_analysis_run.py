@@ -30,13 +30,10 @@ class DispatchAnalysisRun:
         from app.infrastructure.workers.celery_app import celery_app
 
         task_map = {
-            "analysis.docling": "run_analysis",
-            "analysis.docling-pack": "run_analysis.pack.docling-pack",
-            "analysis.docling-docker-pack": "run_analysis.pack.docling-docker-pack",
-            "analysis.opendataloader": "run_analysis_opendataloader",
-            "analysis.mineru": "run_analysis_mineru",
-            "analysis.surya": "run_analysis_surya",
-            "analysis.franken_ocr": "run_analysis_franken_ocr",
+            "analysis.docling": "run_analysis.pack.docling",
+            "analysis.opendataloader": "run_analysis.pack.opendataloader",
+            "analysis.mineru": "run_analysis.pack.mineru",
+            "analysis.franken_ocr": "run_analysis.pack.franken_ocr",
         }
         task_name = task_map.get(queue, "run_analysis")
         celery_app.send_task(
