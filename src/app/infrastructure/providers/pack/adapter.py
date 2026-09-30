@@ -18,8 +18,8 @@ carry particular meaning downstream:
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import msgspec
 from docalchemy.contract import Artifact, JobResult
@@ -64,6 +64,21 @@ class PackAdapter(ProviderAdapter):
         self._pack_id = pack_id
         self._host = Host.from_endpoint(provider_url)
         self._manifest = self._host.providers()[0].manifest
+
+        # Auto-detect storage path mapping from environment variables
+        # STORAGE_HOST_ROOT: storage root on host (e.g., /home/user/storage)
+        # STORAGE_PROVIDER_ROOT: storage root in provider container (e.g., /storage)
+        if storage_path_mapping is None:
+            host_root = os.getenv("STORAGE_HOST_ROOT")
+            provider_root = os.getenv("STORAGE_PROVIDER_ROOT")
+            if host_root and provider_root:
+                storage_path_mapping = (Path(host_root), Path(provider_root))
+                logger.info(
+                    "Auto-detected storage path mapping from env: %s -> %s",
+                    host_root,
+                    provider_root,
+                )
+
         self._storage_path_mapping = storage_path_mapping
 
     @property
@@ -109,30 +124,48 @@ class PackAdapter(ProviderAdapter):
         input_format = _MIME_TO_FORMAT.get(input.source_mime_type, source_path.suffix.lstrip(".").lower())
         options = dict(input.config or {})
 
-        with TemporaryDirectory() as tmp:
-            artifacts_dir = Path(tmp) / "artifacts"
+        # Use shared storage for artifacts so Docker containers can write to it
+        if self._storage_path_mapping:
+            host_root, provider_root = self._storage_path_mapping
+            # Create artifacts dir in shared storage
+            artifacts_dir = host_root / ".tmp" / f"artifacts_{source_path.stem}"
+            artifacts_dir.mkdir(parents=True, exist_ok=True)
+            # Map to provider path
+            provider_artifacts_dir = provider_root / ".tmp" / f"artifacts_{source_path.stem}"
+        else:
+            # No mapping, use regular temp dir (for local/venv providers)
+            import tempfile
+            tmp_dir = tempfile.mkdtemp()
+            artifacts_dir = Path(tmp_dir) / "artifacts"
             artifacts_dir.mkdir()
+            provider_artifacts_dir = artifacts_dir
 
-            def on_progress(progress) -> None:
-                # The pack's SSE progress, streamed live through the Host.
-                # Surfaced in the worker log now; wiring it into the run's
-                # progress reporting is the next integration step.
-                logger.info("pack %s progress: %s", self._pack_id, progress.stage)
+        def on_progress(progress) -> None:
+            # The pack's SSE progress, streamed live through the Host.
+            # Surfaced in the worker log now; wiring it into the run's
+            # progress reporting is the next integration step.
+            logger.info("pack %s progress: %s", self._pack_id, progress.stage)
 
-            try:
-                result = self._host.parse(
-                    self._manifest.name,
-                    provider_source_path,
-                    options=options,
-                    artifacts_dir=artifacts_dir,
-                    on_progress=on_progress,
-                )
-            except JobFailed as exc:
-                raise ProviderError(exc.code.value.upper(), f"{self._pack_id}: {exc.detail}") from exc
-            except ProviderStartError as exc:
-                raise ProviderError("PROVIDER_UNAVAILABLE", str(exc)) from exc
+        try:
+            result = self._host.parse(
+                self._manifest.name,
+                provider_source_path,
+                options=options,
+                artifacts_dir=provider_artifacts_dir,
+                on_progress=on_progress,
+            )
+        except JobFailed as exc:
+            raise ProviderError(exc.code.value.upper(), f"{self._pack_id}: {exc.detail}") from exc
+        except ProviderStartError as exc:
+            raise ProviderError("PROVIDER_UNAVAILABLE", str(exc)) from exc
 
+        try:
             return self._upload(result, artifacts_dir)
+        finally:
+            # Clean up artifacts dir
+            import shutil
+            if artifacts_dir.exists():
+                shutil.rmtree(artifacts_dir, ignore_errors=True)
 
     def _upload(self, result: JobResult, artifacts_dir: Path) -> ProviderOutput:
         uploaded: list[RawArtifact] = [
