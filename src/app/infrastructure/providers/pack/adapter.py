@@ -52,11 +52,19 @@ class PackAdapter(ProviderAdapter):
     provider process (docker or a service supervisor does) but keeps the full
     protocol semantics — progress streaming, error classes, contract checks."""
 
-    def __init__(self, storage: StorageService, *, provider_url: str, pack_id: str) -> None:
+    def __init__(
+        self,
+        storage: StorageService,
+        *,
+        provider_url: str,
+        pack_id: str,
+        storage_path_mapping: tuple[Path, Path] | None = None,
+    ) -> None:
         self._storage = storage
         self._pack_id = pack_id
         self._host = Host.from_endpoint(provider_url)
         self._manifest = self._host.providers()[0].manifest
+        self._storage_path_mapping = storage_path_mapping
 
     @property
     def provider_id(self) -> str:
@@ -88,6 +96,16 @@ class PackAdapter(ProviderAdapter):
         if not source_path.exists():
             raise ProviderError("INPUT_NOT_FOUND", f"source not in storage: {input.source_storage_key}")
 
+        # Map host path to provider path if mapping is configured
+        provider_source_path = source_path
+        if self._storage_path_mapping:
+            host_root, provider_root = self._storage_path_mapping
+            try:
+                relative = source_path.relative_to(host_root)
+                provider_source_path = provider_root / relative
+            except ValueError:
+                pass  # source_path not under host_root, use as-is
+
         input_format = _MIME_TO_FORMAT.get(input.source_mime_type, source_path.suffix.lstrip(".").lower())
         options = dict(input.config or {})
 
@@ -104,7 +122,7 @@ class PackAdapter(ProviderAdapter):
             try:
                 result = self._host.parse(
                     self._manifest.name,
-                    source_path,
+                    provider_source_path,
                     options=options,
                     artifacts_dir=artifacts_dir,
                     on_progress=on_progress,
