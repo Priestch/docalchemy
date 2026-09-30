@@ -22,8 +22,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import msgspec
-from docalchemy_contract import Artifact, JobResult
-from docalchemy_host import Host, JobFailed, ProviderStartError
+from docalchemy.contract import Artifact, JobResult
+from docalchemy.host import Host, JobFailed, ProviderStartError
 
 from app.domain.providers.contract import (
     ProviderAdapter,

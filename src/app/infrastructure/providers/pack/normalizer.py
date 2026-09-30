@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 
 import msgspec
-from docalchemy_contract import Document
+from docalchemy.contract import Document
 
 from app.infrastructure.providers.pack.mapper import document_to_render_document
 from app.infrastructure.render_document import RenderDocument

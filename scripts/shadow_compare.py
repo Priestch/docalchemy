@@ -26,7 +26,7 @@ from pathlib import Path
 
 import httpx
 import msgspec
-from docalchemy_contract import Document, JobResult
+from docalchemy.contract import Document, JobResult
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))

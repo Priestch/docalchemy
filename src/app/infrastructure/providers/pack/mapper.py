@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from docalchemy_contract import Document, ElementKind
-from docalchemy_contract.document import BBox, TableCell
+from docalchemy.contract import Document, ElementKind
+from docalchemy.contract.document import BBox, TableCell
 
 from app.infrastructure.render_document import (
     RenderBlock,
