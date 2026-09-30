@@ -6,3 +6,7 @@ This mapper is the view layer between them — a field-for-field translation
 with no extraction logic: everything positional, tabular, or textual was
 already normalized inside the provider.
 """
+
+from app.infrastructure.providers.pack.adapter import PackAdapter
+
+__all__ = ["PackAdapter"]
