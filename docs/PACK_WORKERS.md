@@ -34,7 +34,7 @@ STORAGE_HOST_ROOT=/home/gaopeng/localstorage/docalchemy
 STORAGE_PROVIDER_ROOT=/storage
 ```
 
-**Important**: `STORAGE_HOST_ROOT` must match the host path mapped in `docker-compose.yml`:
+**Important**: `STORAGE_HOST_ROOT` must match the host path mounted at `/storage` in the docalchemy repo's `docker-compose.yml` (`STORAGE_PATH` variable):
 ```yaml
 volumes:
   - /home/gaopeng/localstorage/docalchemy:/storage
@@ -43,7 +43,7 @@ volumes:
 ### 3. Start Pack Workers
 
 ```bash
-./scripts/start_pack_workers.sh
+make dev-workers
 ```
 
 This starts 4 workers, one for each provider. Logs are saved to `logs/worker_*.log`.
@@ -112,14 +112,14 @@ celery -A app.infrastructure.workers.pack_worker worker --loglevel=info
 **Symptom**: `input not found` error
 
 **Check**:
-1. Docker volume is mounted correctly in `docker-compose.yml`
+1. The `/storage` volume is mounted correctly in the docalchemy repo's `docker-compose.yml`
 2. `STORAGE_HOST_ROOT` matches the host path in docker-compose
 3. File exists: `ls $STORAGE_HOST_ROOT/4b/`
 
 ### Models not downloading
 **Symptom**: `Network is unreachable` or SSL errors
 
-**Solution**: Check `docker-compose.yml` has:
+**Solution**: Check the docalchemy repo's `docker-compose.yml` has:
 ```yaml
 environment:
   - HF_ENDPOINT=https://hf-mirror.com  # Use China mirror

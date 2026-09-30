@@ -36,3 +36,6 @@ test-results/
 /resources/package-lock.json
 /fonduer/
 /docalchemy/
+
+# Dev-process logs (make dev-workers / dev-backend / dev-frontend)
+/logs/

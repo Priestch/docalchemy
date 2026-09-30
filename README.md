@@ -158,7 +158,8 @@ See which analysis engines are online and manage provider configuration.
 
 | Tool | Purpose |
 |------|---------|
-| Docker & Docker Compose | Provider worker containers and infrastructure (PostgreSQL, Redis) |
+| Docker & Docker Compose | Provider containers (sibling `docalchemy` repo) and infrastructure (PostgreSQL, Redis) |
+| Sibling checkout of the [`docalchemy`](https://github.com/Priestch/docalchemy) repo | Provider containers + the `docalchemy` package the pack adapter imports |
 | Python ≥ 3.11 + [PDM](https://pdm.fming.dev) | Backend dependencies |
 | Node.js + [pnpm](https://pnpm.io) | Frontend dependencies |
 
@@ -172,7 +173,8 @@ cd docalchemy
 # 2. Copy and edit environment config
 cp .env.example .env
 
-# 3. Install Python and Node dependencies
+# 3. Install Python and Node dependencies (also install the sibling package:
+#    uv pip install -e ../docalchemy)
 make install
 
 # 4. Apply database migrations
@@ -182,8 +184,9 @@ make migrate
 make dev
 ```
 
-`make dev` starts PostgreSQL and Redis in Docker, rebuilds and starts each
-provider worker container, then launches the Litestar backend and Vite dev
+`make dev` starts PostgreSQL and Redis (`docker-compose.infra.yml`), the four
+provider containers (from the sibling `docalchemy` repo), one Celery pack
+worker per provider on the host, then the Litestar backend and Vite dev
 server.
 
 ```
@@ -195,13 +198,15 @@ Stop all services: `make dev-stop`
 
 ### Provider workers
 
-Each analysis engine runs in its own Docker container. On first run, containers
-download and cache their model weights under `./cache/` — this can be several
-gigabytes per provider and takes a while. Subsequent starts reuse the cache.
+Each analysis engine runs in its own Docker container (from the `docalchemy`
+repo, sharing `/home/gaopeng/localstorage/docalchemy` as `/storage`). On first
+run, containers download and cache their model weights in Docker volumes —
+this can be several gigabytes per provider and takes a while. Subsequent
+starts reuse the cache. The pack workers are plain Celery processes on the
+host; they need no images:
 
 ```bash
-make dev-workers          # start workers without rebuilding images
-make dev-workers-rebuild  # rebuild images then start workers
+make dev-workers          # start the four host pack workers
 ```
 
 ### Useful make targets
