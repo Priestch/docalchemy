@@ -45,7 +45,9 @@ def upgrade() -> None:
                 sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
                 sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
                 sa.PrimaryKeyConstraint("id"),
-                sa.UniqueConstraint("storage_key"),
+                # storage_key is deliberately not unique: storage is
+                # content-addressed, so rows for identical uploads share one
+                # physical file.
                 sa.UniqueConstraint("slug"),
             )
 

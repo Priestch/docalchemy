@@ -1,8 +1,8 @@
-"""Upload semantics under the storage_key/slug unique constraints.
+"""Upload semantics: every upload gets its own row, storage is shared.
 
-Storage is content-addressed, so uploading the same bytes twice must return
-the existing document, and a different file reusing a taken slug must get a
-suffixed one — neither may surface as an integrity error.
+Storage is content-addressed, so re-uploading the same bytes rewrites the
+identical physical file while a second source_document row is created. Slugs
+stay unique with numeric suffixes.
 """
 
 from __future__ import annotations
@@ -53,23 +53,41 @@ async def test_first_upload_creates_document(use_case: UploadSourceDocument) -> 
     dto = await use_case.execute(file_data=PDF_BYTES, filename="report.pdf", mime_type="application/pdf")
 
     assert dto.name == "report.pdf"
+    assert dto.slug == "report"
     assert dto.page_count == 0  # not a real PDF; extraction degrades gracefully
 
 
-async def test_reupload_same_bytes_returns_existing(
+async def test_reupload_same_bytes_creates_second_row_sharing_storage(
     use_case: UploadSourceDocument, uow: FakeDocumentsUnitOfWork
 ) -> None:
     first = await use_case.execute(file_data=PDF_BYTES, filename="report.pdf", mime_type="application/pdf")
+    second = await use_case.execute(file_data=PDF_BYTES, filename="report.pdf", mime_type="application/pdf")
+
+    assert second.id != first.id  # two upload records...
+    assert second.storage_key == first.storage_key  # ...one physical file
+    assert len(uow.documents._store) == 2  # noqa: SLF001
+
+
+async def test_renamed_reupload_keeps_the_new_name(use_case: UploadSourceDocument) -> None:
+    await use_case.execute(file_data=PDF_BYTES, filename="report.pdf", mime_type="application/pdf")
     second = await use_case.execute(file_data=PDF_BYTES, filename="renamed.pdf", mime_type="application/pdf")
 
-    assert second.id == first.id
-    assert len(uow.documents._store) == 1  # noqa: SLF001 — one row, not a duplicate
+    assert second.name == "renamed.pdf"
+    assert second.slug == "renamed"
 
 
-async def test_different_file_with_taken_slug_gets_suffixed_slug(use_case: UploadSourceDocument) -> None:
+async def test_same_name_gets_numeric_slug_suffix(use_case: UploadSourceDocument) -> None:
     first = await use_case.execute(file_data=PDF_BYTES, filename="report.pdf", mime_type="application/pdf")
     other = await use_case.execute(file_data=b"%PDF-1.4 different", filename="report.pdf", mime_type="application/pdf")
 
-    assert other.id != first.id
-    assert other.slug.startswith("report-")
-    assert other.slug != first.slug
+    assert other.slug == "report-2"
+    assert other.storage_key != first.storage_key
+
+
+async def test_slug_suffixes_increment(use_case: UploadSourceDocument) -> None:
+    # Four uploads of the same name: report, report-2, report-3, report-4.
+    for _ in range(3):
+        await use_case.execute(file_data=PDF_BYTES, filename="report.pdf", mime_type="application/pdf")
+    fourth = await use_case.execute(file_data=PDF_BYTES, filename="report.pdf", mime_type="application/pdf")
+
+    assert fourth.slug == "report-4"

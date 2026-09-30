@@ -150,6 +150,9 @@ class DocumentController(Controller):
     ) -> None:
         async with documents_uow:
             doc = await documents_uow.documents.get(document_id)
-            storage_path = storage_service.resolve(doc.storage_key)
-            storage_path.unlink(missing_ok=True)
             await documents_uow.documents.delete(document_id)
+            # Rows share physical files (storage is content-addressed); only
+            # remove the file once no other row references it.
+            if await documents_uow.documents.count_by_storage_key(doc.storage_key) == 0:
+                storage_service.resolve(doc.storage_key).unlink(missing_ok=True)
+            await documents_uow.commit()

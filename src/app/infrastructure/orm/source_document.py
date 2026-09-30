@@ -13,7 +13,9 @@ class SourceDocumentORM(UUIDAuditBase, SlugKey):
     name: Mapped[str] = mapped_column(String(length=255), nullable=False)
     mime_type: Mapped[str] = mapped_column(String(length=100), nullable=False)
     size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    storage_key: Mapped[str] = mapped_column(String(length=64), unique=True, nullable=False)
+    # Not unique on purpose: every upload creates its own row, while storage
+    # stays content-addressed — rows for the same bytes share one file.
+    storage_key: Mapped[str] = mapped_column(String(length=64), nullable=False)
     checksum: Mapped[str] = mapped_column(String(length=32), nullable=False)
     page_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     page_dimensions: Mapped[dict] = mapped_column(JSONB, nullable=False, default=list)

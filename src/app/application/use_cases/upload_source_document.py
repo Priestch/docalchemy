@@ -26,20 +26,14 @@ class UploadSourceDocument:
         checksum = hashlib.md5(file_data).hexdigest()
         size_bytes = len(file_data)
 
-        # Storage is content-addressed, so an identical file is already there.
-        # Re-uploading it returns the existing row rather than colliding with
-        # the storage_key unique constraint.
-        async with self._uow as uow:
-            existing = await uow.documents.get_by_checksum(checksum)
-        if existing is not None:
-            return self._to_dto(existing)
-
+        # Every upload gets its own row; storage stays content-addressed, so
+        # re-uploading the same bytes just rewrites the identical file.
         storage_key = self._storage.save(file_data, suffix=suffix)
 
         page_count, page_dimensions = self._extract_page_info(file_data, mime_type, suffix)
 
         now = datetime.now(tz=timezone.utc)
-        slug = await self._unique_slug(Path(filename).stem.lower().replace(" ", "-"), checksum)
+        slug = await self._unique_slug(Path(filename).stem.lower().replace(" ", "-"))
         entity = SourceDocument(
             id=uuid4(),
             name=filename,
@@ -60,14 +54,16 @@ class UploadSourceDocument:
 
         return self._to_dto(entity)
 
-    async def _unique_slug(self, slug: str, checksum: str) -> str:
-        """Slugs are unique too; a different file with the same name gets the
-        checksum appended rather than an integrity error."""
+    async def _unique_slug(self, slug: str) -> str:
+        """Slugs back URLs and must stay unique; a taken name gets a numeric
+        suffix (slug, slug-2, slug-3, ...) instead of an integrity error."""
         async with self._uow as uow:
-            existing = await uow.documents.get_by_slug(slug)
-        if existing is None or existing.checksum == checksum:
-            return slug
-        return f"{slug}-{checksum[:8]}"
+            if await uow.documents.get_by_slug(slug) is None:
+                return slug
+            n = 2
+            while await uow.documents.get_by_slug(f"{slug}-{n}") is not None:
+                n += 1
+            return f"{slug}-{n}"
 
     @staticmethod
     def _to_dto(entity: SourceDocument) -> SourceDocumentDTO:

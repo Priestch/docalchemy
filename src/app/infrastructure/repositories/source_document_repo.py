@@ -84,6 +84,13 @@ class SqlAlchemySourceDocumentRepository(AbstractSourceDocumentRepository):
         orm = result.scalar_one_or_none()
         return _to_entity(orm) if orm is not None else None
 
+    async def count_by_storage_key(self, storage_key: str) -> int:
+        stmt = select(func.count()).select_from(SourceDocumentORM).where(
+            SourceDocumentORM.storage_key == storage_key
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one()
+
     async def add(self, entity: SourceDocument) -> SourceDocument:
         orm = _to_orm(entity)
         self._session.add(orm)

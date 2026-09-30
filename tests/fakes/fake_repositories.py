@@ -25,6 +25,9 @@ class FakeSourceDocumentRepository(AbstractSourceDocumentRepository):
     async def get_by_slug(self, slug: str) -> SourceDocument | None:
         return next((d for d in self._store.values() if d.slug == slug), None)
 
+    async def count_by_storage_key(self, storage_key: str) -> int:
+        return sum(1 for d in self._store.values() if d.storage_key == storage_key)
+
     async def add(self, entity: SourceDocument) -> SourceDocument:
         self._store[entity.id] = entity
         return entity

@@ -17,6 +17,9 @@ class AbstractSourceDocumentRepository(ABC):
     async def get_by_slug(self, slug: str) -> SourceDocument | None: ...
 
     @abstractmethod
+    async def count_by_storage_key(self, storage_key: str) -> int: ...
+
+    @abstractmethod
     async def add(self, entity: SourceDocument) -> SourceDocument: ...
 
     @abstractmethod
