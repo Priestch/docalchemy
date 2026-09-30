@@ -19,16 +19,35 @@ class FakeSourceDocumentRepository(AbstractSourceDocumentRepository):
             raise ValueError(msg)
         return self._store[id]
 
+    async def get_by_checksum(self, checksum: str) -> SourceDocument | None:
+        return next((d for d in self._store.values() if d.checksum == checksum), None)
+
+    async def get_by_slug(self, slug: str) -> SourceDocument | None:
+        return next((d for d in self._store.values() if d.slug == slug), None)
+
     async def add(self, entity: SourceDocument) -> SourceDocument:
         self._store[entity.id] = entity
         return entity
 
-    async def list(self, offset: int = 0, limit: int = 50) -> list[SourceDocument]:
+    async def list(
+        self,
+        offset: int = 0,
+        limit: int = 50,
+        q: str | None = None,  # noqa: ARG002
+        provider: str | None = None,  # noqa: ARG002
+    ) -> list[SourceDocument]:
         items = sorted(self._store.values(), key=lambda d: d.created_at, reverse=True)
         return items[offset : offset + limit]
 
-    async def count(self) -> int:
+    async def count(
+        self,
+        q: str | None = None,  # noqa: ARG002
+        provider: str | None = None,  # noqa: ARG002
+    ) -> int:
         return len(self._store)
+
+    async def delete(self, id: UUID) -> None:
+        self._store.pop(id, None)
 
 
 class FakeAnalysisRunRepository(AbstractAnalysisRunRepository):

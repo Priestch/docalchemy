@@ -23,14 +23,23 @@ class UploadSourceDocument:
         mime_type: str,
     ) -> SourceDocumentDTO:
         suffix = Path(filename).suffix.lower()
-        storage_key = self._storage.save(file_data, suffix=suffix)
-
         checksum = hashlib.md5(file_data).hexdigest()
         size_bytes = len(file_data)
+
+        # Storage is content-addressed, so an identical file is already there.
+        # Re-uploading it returns the existing row rather than colliding with
+        # the storage_key unique constraint.
+        async with self._uow as uow:
+            existing = await uow.documents.get_by_checksum(checksum)
+        if existing is not None:
+            return self._to_dto(existing)
+
+        storage_key = self._storage.save(file_data, suffix=suffix)
 
         page_count, page_dimensions = self._extract_page_info(file_data, mime_type, suffix)
 
         now = datetime.now(tz=timezone.utc)
+        slug = await self._unique_slug(Path(filename).stem.lower().replace(" ", "-"), checksum)
         entity = SourceDocument(
             id=uuid4(),
             name=filename,
@@ -40,7 +49,7 @@ class UploadSourceDocument:
             checksum=checksum,
             page_count=page_count,
             page_dimensions=page_dimensions,
-            slug=Path(filename).stem.lower().replace(" ", "-"),
+            slug=slug,
             created_at=now,
             updated_at=now,
         )
@@ -49,6 +58,19 @@ class UploadSourceDocument:
             await uow.documents.add(entity)
             await uow.commit()
 
+        return self._to_dto(entity)
+
+    async def _unique_slug(self, slug: str, checksum: str) -> str:
+        """Slugs are unique too; a different file with the same name gets the
+        checksum appended rather than an integrity error."""
+        async with self._uow as uow:
+            existing = await uow.documents.get_by_slug(slug)
+        if existing is None or existing.checksum == checksum:
+            return slug
+        return f"{slug}-{checksum[:8]}"
+
+    @staticmethod
+    def _to_dto(entity: SourceDocument) -> SourceDocumentDTO:
         return SourceDocumentDTO(
             id=entity.id,
             name=entity.name,

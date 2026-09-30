@@ -72,6 +72,18 @@ class SqlAlchemySourceDocumentRepository(AbstractSourceDocumentRepository):
         orm = result.scalar_one()
         return _to_entity(orm)
 
+    async def get_by_checksum(self, checksum: str) -> SourceDocument | None:
+        stmt = select(SourceDocumentORM).where(SourceDocumentORM.checksum == checksum)
+        result = await self._session.execute(stmt)
+        orm = result.scalar_one_or_none()
+        return _to_entity(orm) if orm is not None else None
+
+    async def get_by_slug(self, slug: str) -> SourceDocument | None:
+        stmt = select(SourceDocumentORM).where(SourceDocumentORM.slug == slug)
+        result = await self._session.execute(stmt)
+        orm = result.scalar_one_or_none()
+        return _to_entity(orm) if orm is not None else None
+
     async def add(self, entity: SourceDocument) -> SourceDocument:
         orm = _to_orm(entity)
         self._session.add(orm)
