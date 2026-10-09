@@ -85,6 +85,47 @@ def upgrade() -> None:
                 sa.ForeignKeyConstraint(["analysis_run_id"], ["analysis_run.id"], ondelete="CASCADE"),
             )
 
+            # Granular parse output, derived from the immutable render blob at
+            # success-marking time: the queryable index the blob is not. Blocks
+            # are RAG chunk candidates; figures carry the image storage key.
+            op.create_table(
+                "render_block",
+                sa.Column("id", sa.Uuid(), nullable=False),
+                sa.Column("analysis_run_id", sa.Uuid(), nullable=False),
+                sa.Column("block_id", sa.String(length=120), nullable=False),
+                sa.Column("order", sa.Integer(), nullable=False),
+                sa.Column("kind", sa.String(length=30), nullable=False),
+                sa.Column("text", sa.Text(), nullable=False),
+                sa.Column("page_index", sa.Integer(), nullable=False, server_default="0"),
+                sa.Column("heading_level", sa.Integer(), nullable=True),
+                sa.Column("bbox", sa.JSON(), nullable=True),
+                sa.Column("reading_order", sa.Integer(), nullable=False),
+                sa.Column("sa_orm_sentinel", sa.Integer(), nullable=True),
+                sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+                sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+                sa.PrimaryKeyConstraint("id"),
+                sa.ForeignKeyConstraint(["analysis_run_id"], ["analysis_run.id"], ondelete="CASCADE"),
+                sa.UniqueConstraint("analysis_run_id", "block_id"),
+                sa.Index("ix_render_block_run_order", "analysis_run_id", "order"),
+                sa.Index("ix_render_block_kind", "kind"),
+            )
+
+            op.create_table(
+                "render_figure",
+                sa.Column("id", sa.Uuid(), nullable=False),
+                sa.Column("render_block_id", sa.Uuid(), nullable=False),
+                sa.Column("analysis_run_id", sa.Uuid(), nullable=False),
+                sa.Column("image_storage_key", sa.String(length=64), nullable=False),
+                sa.Column("description", sa.Text(), nullable=True),
+                sa.Column("sa_orm_sentinel", sa.Integer(), nullable=True),
+                sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+                sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+                sa.PrimaryKeyConstraint("id"),
+                sa.ForeignKeyConstraint(["render_block_id"], ["render_block.id"], ondelete="CASCADE"),
+                sa.ForeignKeyConstraint(["analysis_run_id"], ["analysis_run.id"], ondelete="CASCADE"),
+                sa.UniqueConstraint("render_block_id"),
+            )
+
             op.create_table(
                 "comparison_session",
                 sa.Column("id", sa.Uuid(), nullable=False),
