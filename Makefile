@@ -166,8 +166,7 @@ dev-workers:										## Start Celery pack workers (one per provider, on the hos
 		STORAGE_ROOT_PATH=$(STORAGE_HOST) \
 		STORAGE_HOST_ROOT=$(STORAGE_HOST) \
 		STORAGE_PROVIDER_ROOT=/storage \
-		PYTHONPATH=src \
-		nohup $(ENV_PREFIX)celery -A app.infrastructure.workers.pack_worker worker \
+		nohup $(ENV_PREFIX)celery -A docalchemy_gateway.platform.worker:celery_app worker \
 			--queues=analysis.$$pack_id --loglevel=info --concurrency=1 --hostname="$$pack_id@%h" \
 			> logs/worker_$$pack_id.log 2>&1 & \
 		echo $$! > /tmp/docalchemy-worker-$$pack_id.pid; \
@@ -182,6 +181,7 @@ dev-backend:										## Start the Litestar backend on port 8000
 	@echo "=> Starting backend on port 8000"
 	@mkdir -p logs
 	@DATABASE_URL="postgresql+asyncpg://app:app@localhost:15433/app" \
+	REDIS_URL=redis://localhost:16377/0 \
 	STORAGE_ROOT_PATH=$(STORAGE_HOST) \
 	PYTHONPATH=src LITESTAR_APP=app.asgi:app \
 	nohup $(ENV_PREFIX)litestar run --host 0.0.0.0 --port 8000 \

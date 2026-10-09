@@ -79,8 +79,6 @@ class DatabaseSettings:
             engine = create_async_engine(
                 url=self.URL,
                 future=True,
-                json_serializer=encode_json,
-                json_deserializer=decode_json,
                 echo=self.ECHO,
                 echo_pool=self.ECHO_POOL,
                 max_overflow=self.POOL_MAX_OVERFLOW,
@@ -91,46 +89,10 @@ class DatabaseSettings:
                 pool_use_lifo=True,  # use lifo to reduce the number of idle connections
                 poolclass=NullPool if self.POOL_DISABLED else None,
             )
-            """Database session factory.
-
-            See [`async_sessionmaker()`][sqlalchemy.ext.asyncio.async_sessionmaker].
-            """
-
-            @event.listens_for(engine.sync_engine, "connect")
-            def _sqla_on_connect(dbapi_connection: Any, _: Any) -> Any:  # pragma: no cover
-                def encoder(bin_value: bytes) -> bytes:
-                    return b"\x01" + bin_value
-
-                def decoder(bin_value: bytes) -> Any:
-                    # Handle both binary (starts with 0x01 version byte) and text formats
-                    if bin_value and bin_value[0:1] == b"\x01":
-                        return decode_json(bin_value[1:])
-                    return decode_json(bin_value)
-
-                dbapi_connection.await_(
-                    dbapi_connection.driver_connection.set_type_codec(
-                        "jsonb",
-                        encoder=encoder,
-                        decoder=decoder,
-                        schema="pg_catalog",
-                        format="binary",
-                    ),
-                )
-                dbapi_connection.await_(
-                    dbapi_connection.driver_connection.set_type_codec(
-                        "json",
-                        encoder=encoder,
-                        decoder=decoder,
-                        schema="pg_catalog",
-                        format="binary",
-                    ),
-                )
         elif self.URL.startswith("sqlite+aiosqlite"):
             engine = create_async_engine(
                 url=self.URL,
                 future=True,
-                json_serializer=encode_json,
-                json_deserializer=decode_json,
                 echo=self.ECHO,
                 echo_pool=self.ECHO_POOL,
                 pool_recycle=self.POOL_RECYCLE,
@@ -154,8 +116,6 @@ class DatabaseSettings:
             engine = create_async_engine(
                 url=self.URL,
                 future=True,
-                json_serializer=encode_json,
-                json_deserializer=decode_json,
                 echo=self.ECHO,
                 echo_pool=self.ECHO_POOL,
                 max_overflow=self.POOL_MAX_OVERFLOW,
@@ -175,8 +135,6 @@ class DatabaseSettings:
             engine = create_engine(
                 url=self.URL,
                 future=True,
-                json_serializer=encode_json,
-                json_deserializer=decode_json,
                 echo=self.ECHO,
                 echo_pool=self.ECHO_POOL,
                 max_overflow=self.POOL_MAX_OVERFLOW,
@@ -196,8 +154,6 @@ class DatabaseSettings:
             engine = create_engine(
                 url=url,
                 future=True,
-                json_serializer=encode_json,
-                json_deserializer=decode_json,
                 echo=self.ECHO,
                 echo_pool=self.ECHO_POOL,
                 pool_recycle=self.POOL_RECYCLE,
@@ -221,8 +177,6 @@ class DatabaseSettings:
             engine = create_engine(
                 url=self.URL,
                 future=True,
-                json_serializer=encode_json,
-                json_deserializer=decode_json,
                 echo=self.ECHO,
                 echo_pool=self.ECHO_POOL,
                 max_overflow=self.POOL_MAX_OVERFLOW,

@@ -1,6 +1,7 @@
 [project]
 dependencies = [
     "docalchemy @ file:///${PROJECT_ROOT}/../docalchemy",
+    "docalchemy-gateway @ file:///${PROJECT_ROOT}/../docalchemy/packages/docalchemy-gateway",
     "python-dotenv>=1.0.0",
     "litestar-vite[nodeenv]>=0.1.21",
     "celery[redis]>=5.4.0",

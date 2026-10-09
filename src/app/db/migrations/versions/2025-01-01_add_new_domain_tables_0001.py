@@ -1,7 +1,12 @@
-"""add source_document analysis_run analysis_artifact comparison_session
+"""comparison tables only
+
+Document/analysis domain tables (source_document, analysis_run,
+analysis_artifact, render_block, render_figure) are owned by
+docalchemy-gateway and its own migration chain (version table
+gateway_ddl_version). This chain owns only the app's scenario tables.
 
 Revision ID: 0001_new_domain
-Revises: 52cfe391ad53
+Revises:
 Create Date: 2025-01-01 00:00:00.000000+00:00
 
 """
@@ -20,7 +25,7 @@ __all__ = ["downgrade", "upgrade"]
 
 # revision identifiers, used by Alembic.
 revision = "0001_new_domain"
-down_revision = "52cfe391ad53"
+down_revision = None
 branch_labels = None
 depends_on = None
 
@@ -29,103 +34,6 @@ def upgrade() -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)
         with op.get_context().autocommit_block():
-            op.create_table(
-                "source_document",
-                sa.Column("id", sa.Uuid(), nullable=False),
-                sa.Column("name", sa.String(length=255), nullable=False),
-                sa.Column("mime_type", sa.String(length=100), nullable=False),
-                sa.Column("size_bytes", sa.BigInteger(), nullable=False),
-                sa.Column("storage_key", sa.String(length=64), nullable=False),
-                sa.Column("checksum", sa.String(length=32), nullable=False),
-                sa.Column("page_count", sa.Integer(), nullable=False, server_default="0"),
-                sa.Column("page_dimensions", sa.JSON(), nullable=False, server_default="[]"),
-                sa.Column("uploaded_by", sa.String(length=255), nullable=True),
-                sa.Column("slug", sa.String(length=100), nullable=True),
-                sa.Column("sa_orm_sentinel", sa.Integer(), nullable=True),
-                sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-                sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-                sa.PrimaryKeyConstraint("id"),
-                # storage_key is deliberately not unique: storage is
-                # content-addressed, so rows for identical uploads share one
-                # physical file.
-                sa.UniqueConstraint("slug"),
-            )
-
-            op.create_table(
-                "analysis_run",
-                sa.Column("id", sa.Uuid(), nullable=False),
-                sa.Column("source_document_id", sa.Uuid(), nullable=False),
-                sa.Column("provider_id", sa.String(length=50), nullable=False),
-                sa.Column("provider_version", sa.String(length=20), nullable=False, server_default=""),
-                sa.Column("status", sa.String(length=20), nullable=False, server_default="pending"),
-                sa.Column("requested_config", sa.JSON(), nullable=False, server_default="{}"),
-                sa.Column("runtime_metadata", sa.JSON(), nullable=True),
-                sa.Column("started_at", sa.DateTime(timezone=True), nullable=True),
-                sa.Column("finished_at", sa.DateTime(timezone=True), nullable=True),
-                sa.Column("error_code", sa.String(length=50), nullable=True),
-                sa.Column("error_message", sa.Text(), nullable=True),
-                sa.Column("sa_orm_sentinel", sa.Integer(), nullable=True),
-                sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-                sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-                sa.PrimaryKeyConstraint("id"),
-                sa.ForeignKeyConstraint(["source_document_id"], ["source_document.id"], ondelete="CASCADE"),
-            )
-
-            op.create_table(
-                "analysis_artifact",
-                sa.Column("id", sa.Uuid(), nullable=False),
-                sa.Column("analysis_run_id", sa.Uuid(), nullable=False),
-                sa.Column("artifact_type", sa.String(length=30), nullable=False),
-                sa.Column("format", sa.String(length=10), nullable=False),
-                sa.Column("storage_key", sa.String(length=64), nullable=False),
-                sa.Column("sa_orm_sentinel", sa.Integer(), nullable=True),
-                sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-                sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-                sa.PrimaryKeyConstraint("id"),
-                sa.ForeignKeyConstraint(["analysis_run_id"], ["analysis_run.id"], ondelete="CASCADE"),
-            )
-
-            # Granular parse output, derived from the immutable render blob at
-            # success-marking time: the queryable index the blob is not. Blocks
-            # are RAG chunk candidates; figures carry the image storage key.
-            op.create_table(
-                "render_block",
-                sa.Column("id", sa.Uuid(), nullable=False),
-                sa.Column("analysis_run_id", sa.Uuid(), nullable=False),
-                sa.Column("block_id", sa.String(length=120), nullable=False),
-                sa.Column("order", sa.Integer(), nullable=False),
-                sa.Column("kind", sa.String(length=30), nullable=False),
-                sa.Column("text", sa.Text(), nullable=False),
-                sa.Column("page_index", sa.Integer(), nullable=False, server_default="0"),
-                sa.Column("heading_level", sa.Integer(), nullable=True),
-                sa.Column("bbox", sa.JSON(), nullable=True),
-                sa.Column("reading_order", sa.Integer(), nullable=False),
-                sa.Column("sa_orm_sentinel", sa.Integer(), nullable=True),
-                sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-                sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-                sa.PrimaryKeyConstraint("id"),
-                sa.ForeignKeyConstraint(["analysis_run_id"], ["analysis_run.id"], ondelete="CASCADE"),
-                sa.UniqueConstraint("analysis_run_id", "block_id"),
-                sa.Index("ix_render_block_run_order", "analysis_run_id", "order"),
-                sa.Index("ix_render_block_kind", "kind"),
-            )
-
-            op.create_table(
-                "render_figure",
-                sa.Column("id", sa.Uuid(), nullable=False),
-                sa.Column("render_block_id", sa.Uuid(), nullable=False),
-                sa.Column("analysis_run_id", sa.Uuid(), nullable=False),
-                sa.Column("image_storage_key", sa.String(length=64), nullable=False),
-                sa.Column("description", sa.Text(), nullable=True),
-                sa.Column("sa_orm_sentinel", sa.Integer(), nullable=True),
-                sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-                sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-                sa.PrimaryKeyConstraint("id"),
-                sa.ForeignKeyConstraint(["render_block_id"], ["render_block.id"], ondelete="CASCADE"),
-                sa.ForeignKeyConstraint(["analysis_run_id"], ["analysis_run.id"], ondelete="CASCADE"),
-                sa.UniqueConstraint("render_block_id"),
-            )
-
             op.create_table(
                 "comparison_session",
                 sa.Column("id", sa.Uuid(), nullable=False),
@@ -154,6 +62,3 @@ def downgrade() -> None:
         with op.get_context().autocommit_block():
             op.drop_table("comparison_session_runs")
             op.drop_table("comparison_session")
-            op.drop_table("analysis_artifact")
-            op.drop_table("analysis_run")
-            op.drop_table("source_document")

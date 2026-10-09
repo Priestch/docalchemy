@@ -35,7 +35,7 @@ def create_app() -> Litestar:
             plugins.alchemy,
             plugins.vite,
         ],
-        request_max_body_size=100_000_000,
+        request_max_body_size=220_000_000,  # gateway caps uploads at 200 MB; the app layer must not cut below it
     )
 
 
